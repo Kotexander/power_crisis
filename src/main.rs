@@ -7,23 +7,38 @@ use game::*;
 
 struct App {
     game: Game,
-    camera: Camera2D
+    camera: Camera2D,
 }
 impl App {
     fn new() -> Self {
         let game = Game::new();
+
+        let scale = 0.1;
         let camera = Camera2D {
-            zoom: vec2(1.0, screen_width()/screen_height()),
+            zoom: vec2(1.0 * scale, screen_width() / screen_height() * scale),
             ..Camera2D::default()
         };
+
         set_camera(&camera);
         Self { game, camera }
     }
     fn draw(&self) {
+        self.draw_player();
         self.draw_generator_ui();
     }
     fn update(&mut self, delta: f32) {
         self.game.update(delta);
+    }
+
+    fn draw_player(&self) {
+        let player = self.game.player();
+        draw_rectangle(
+            player.pos().x,
+            player.pos().y,
+            player.size().x,
+            player.size().y,
+            BLUE,
+        );
     }
 
     fn draw_generator_ui(&self) {
