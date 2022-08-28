@@ -46,6 +46,7 @@ impl App {
 
     fn draw(&self) {
         self.draw_player();
+        self.draw_buildings();
         self.draw_generator_ui();
     }
 
@@ -82,6 +83,22 @@ impl App {
             ..DrawTextureParams::default()
         };
         draw_texture_ex(self.assets.player, player.pos().x, player.pos().y, WHITE, draw_param);
+    }
+
+    fn draw_building(&self, building: &Building) {
+        draw_rectangle(
+            building.pos().x,
+            building.pos().y,
+            building.size().x,
+            building.size().y,
+            RED,
+        );
+    }
+
+    fn draw_buildings(&self) {
+        for building in self.game.buildings() {
+            self.draw_building(building);
+        }
     }
 
     fn draw_generator_ui(&self) {
