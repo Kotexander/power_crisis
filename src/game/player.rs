@@ -12,6 +12,7 @@ impl Player {
             pos, 
             size, 
             vel,
+
         }
     }
 
