@@ -14,7 +14,7 @@ pub struct Game {
 impl Game {
     pub fn new() -> Self {
         let generator = Generator::new(1.0, 0.1, true);
-        let player = Player::new(vec2(0.0, 0.0), vec2(0.5, 0.5));
+        let player = Player::new(vec2(0.0, 0.0), vec2(1.0, 1.0));
         Self { generator, player }
     }
 

@@ -5,12 +5,27 @@ use macroquad::prelude::*;
 mod game;
 use game::*;
 
+struct Assets {
+    player: Texture2D,
+} 
+impl Assets {
+    async fn load() -> Self {
+        let player = load_texture("assets/player_idle1.png").await.unwrap();
+        player.set_filter(FilterMode::Nearest);
+
+        Self {
+            player,
+        }
+    }
+}
+
 struct App {
     game: Game,
     camera: Camera2D,
+    assets: Assets,
 }
 impl App {
-    fn new() -> Self {
+    async fn new() -> Self {
         let game = Game::new();
 
         let scale = 0.1;
@@ -19,8 +34,14 @@ impl App {
             ..Camera2D::default()
         };
 
+        let assets = Assets::load().await;
+
         set_camera(&camera);
-        Self { game, camera }
+        Self { 
+            game, 
+            camera,
+            assets,
+        }
     }
 
     fn draw(&self) {
@@ -54,15 +75,14 @@ impl App {
 
     fn draw_player(&self) {
         let player = self.game.player();
-        draw_rectangle(
-            player.pos().x,
-            player.pos().y,
-            player.size().x,
-            player.size().y,
-            BLUE,
-        );
+        
+        let draw_param = DrawTextureParams {
+            dest_size: Some(vec2(self.assets.player.width()/16.0, self.assets.player.height()/16.0)),
+            flip_y: true,
+            ..DrawTextureParams::default()
+        };
+        draw_texture_ex(self.assets.player, player.pos().x, player.pos().y, WHITE, draw_param);
     }
-
 
     fn draw_generator_ui(&self) {
         set_default_camera();
@@ -77,7 +97,7 @@ impl App {
 
 #[macroquad::main("Power Crisis")]
 async fn main() {
-    let mut app = App::new();
+    let mut app = App::new().await;
     loop {
         clear_background(BLACK);
 
