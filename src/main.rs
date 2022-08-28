@@ -22,12 +22,31 @@ impl App {
         set_camera(&camera);
         Self { game, camera }
     }
+
     fn draw(&self) {
         self.draw_player();
         self.draw_generator_ui();
     }
+
     fn update(&mut self, delta: f32) {
+        self.player_key_input();
         self.game.update(delta);
+    }
+    
+    fn player_key_input(&mut self) {
+        if is_key_down(KeyCode::D) {
+            self.game.player_mut().add_velocity(vec2(1.0, 0.0));
+        }
+        if is_key_down(KeyCode::A) {
+            self.game.player_mut().add_velocity(vec2(-1.0, 0.0));
+        }
+        if is_key_down(KeyCode::W) {
+            self.game.player_mut().add_velocity(vec2(0.0, 1.0));
+        }
+        if is_key_down(KeyCode::S) {
+            self.game.player_mut().add_velocity(vec2(0.0, -1.0));
+        }
+
     }
 
     fn draw_player(&self) {
@@ -41,6 +60,7 @@ impl App {
         );
     }
 
+
     fn draw_generator_ui(&self) {
         set_default_camera();
 
@@ -49,6 +69,7 @@ impl App {
 
         set_camera(&self.camera);
     }
+
 }
 
 #[macroquad::main("Power Crisis")]
@@ -56,6 +77,11 @@ async fn main() {
     let mut app = App::new();
     loop {
         clear_background(BLACK);
+
+        // TODO: remove in final release
+        if is_key_pressed(KeyCode::Escape){
+            break;
+        }
 
         app.draw();
         app.update(get_frame_time());
