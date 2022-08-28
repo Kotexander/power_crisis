@@ -34,18 +34,21 @@ impl App {
     }
     
     fn player_key_input(&mut self) {
+        let mut vel = vec2(0.0, 0.0);
+        let speed = 2.0;
         if is_key_down(KeyCode::D) {
-            self.game.player_mut().add_velocity(vec2(1.0, 0.0));
+            vel.x += 1.0;
         }
         if is_key_down(KeyCode::A) {
-            self.game.player_mut().add_velocity(vec2(-1.0, 0.0));
+            vel.x -= 1.0;
         }
         if is_key_down(KeyCode::W) {
-            self.game.player_mut().add_velocity(vec2(0.0, 1.0));
+            vel.y += 1.0;
         }
         if is_key_down(KeyCode::S) {
-            self.game.player_mut().add_velocity(vec2(0.0, -1.0));
+            vel.y -= 1.0;
         }
+        self.game.player_mut().add_velocity(vel.normalize_or_zero() * speed);
 
     }
 
