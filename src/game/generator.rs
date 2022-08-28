@@ -8,8 +8,10 @@ impl Generator {
         Self { feul, efficiency, running }
     }
     pub fn update(&mut self, delta: f32) {
-        if self.running {
+        if self.running && self.feul != 0.0 {
             self.feul -= self.efficiency * delta;
+
+            self.feul = self.feul.max(0.0);
         }
     }
     pub fn feul(&self) -> f32 {
