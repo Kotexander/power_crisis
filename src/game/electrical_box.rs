@@ -16,7 +16,7 @@ impl ElectricalBox {
     }
 
     /// Get a reference to the electrical box's hit box.
-    pub fn hit_box(&self) -> Rect {
-        self.hit_box
+    pub fn hit_box(&self) -> &Rect {
+        &self.hit_box
     }
 }

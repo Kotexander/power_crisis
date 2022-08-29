@@ -103,6 +103,8 @@ impl App {
         self.draw_buildings();
         self.draw_player();
         self.draw_generator_ui();
+
+        self.draw_hit_boxes();
     }
 
     fn update(&mut self, delta: f32) {
@@ -199,6 +201,42 @@ impl App {
         draw_rectangle(15., 15., 100. * self.game.generator().feul(), 10., YELLOW);
 
         set_camera(&self.camera);
+    }
+
+
+    fn draw_hit_box_electrical_box(&self, electrical_box: &ElectricalBox) {
+        self.draw_hit_box(electrical_box.hit_box());
+    }
+    
+    fn draw_hit_box_electrical_boxes(&self) {
+        for electrical_box in self.game.electrical_boxes() {
+            self.draw_hit_box_electrical_box(electrical_box);
+        }
+    }
+
+
+    fn draw_hit_box_building(&self, building: &Building) {
+        self.draw_hit_box(building.hit_box());
+    }
+    
+    fn draw_hit_box_buildings(&self) {
+        for building in self.game.buildings() {
+            self.draw_hit_box_building(building);
+        }
+    }
+
+    fn draw_hit_box_player(&self) {
+        self.draw_hit_box(self.game.player().hit_box());
+    }
+
+    fn draw_hit_boxes(&self) {
+        self.draw_hit_box_buildings();
+        self.draw_hit_box_electrical_boxes();
+        self.draw_hit_box_player();
+    }
+
+    fn draw_hit_box(&self, hit_box: &Rect) {
+        draw_rectangle_lines(hit_box.x, hit_box.y, hit_box.w, hit_box.h, 0.1, WHITE);
     }
 }
 
