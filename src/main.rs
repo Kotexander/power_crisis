@@ -5,6 +5,8 @@ use game::*;
 
 struct Assets {
     player_animation: Vec<Texture2D>,
+    electrical_box: Texture2D,
+    electrical_box_broken: Texture2D,
 } 
 impl Assets {
     async fn load() -> Self {
@@ -17,8 +19,17 @@ impl Assets {
             player_animation.push(frame);
         }
 
+
+        let electrical_box = load_texture("assets/electrical_box.png").await.unwrap();
+        electrical_box.set_filter(FilterMode::Nearest);
+
+        let electrical_box_broken = load_texture("assets/electrical_box_broken.png").await.unwrap();
+        electrical_box_broken.set_filter(FilterMode::Nearest);
+
         Self {
             player_animation,
+            electrical_box,
+            electrical_box_broken
         }
     }
 }
@@ -88,8 +99,9 @@ impl App {
     }
 
     fn draw(&self) {
-        self.draw_player();
+        self.draw_electical_boxes();
         self.draw_buildings();
+        self.draw_player();
         self.draw_generator_ui();
     }
 
@@ -156,6 +168,31 @@ impl App {
     fn draw_buildings(&self) {
         for building in self.game.buildings() {
             self.draw_building(building);
+        }
+    }
+
+    fn draw_electical_box(&self, electrical_box: &ElectricalBox) {
+
+        let texture: Texture2D;
+        if *electrical_box.broken() {
+            texture = self.assets.electrical_box_broken;
+        }
+        else {
+            texture = self.assets.electrical_box;
+        }
+
+        let draw_param = DrawTextureParams {
+            dest_size: Some(vec2(texture.width()/16.0, texture.height()/16.0)),
+            flip_y: true,
+            ..DrawTextureParams::default()
+        };
+
+        draw_texture_ex(texture, electrical_box.pos().x, electrical_box.pos().y, WHITE, draw_param);
+    }
+
+    fn draw_electical_boxes(&self) {
+        for ebox in self.game.electrical_boxes() {
+            self.draw_electical_box(ebox);
         }
     }
 

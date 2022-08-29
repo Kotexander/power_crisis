@@ -7,12 +7,17 @@ pub use player::*;
 mod building;
 pub use building::*;
 
+mod electricalBox;
+pub use electricalBox::*;
+
 use macroquad::math::vec2;
 
 pub struct Game {
     generator: Generator,
     player: Player,
-    buildings: Vec<Building>
+    buildings: Vec<Building>,
+    number_of_repair_kits: u32,
+    electrical_boxes: Vec<ElectricalBox>,
 }
 
 impl Game {
@@ -23,7 +28,17 @@ impl Game {
         let buildings = vec![
             Building::new(vec2(-1.0, -1.0), vec2(2.0, 2.0)),
         ];
-        Self { generator, player, buildings }
+
+        let electrical_boxes = vec! [
+            ElectricalBox::new(vec2(-1.0, 3.0))
+        ];
+        Self { 
+            generator,
+            player,
+            buildings,
+            number_of_repair_kits: 0,
+            electrical_boxes,
+        }
     }
 
     pub fn update(&mut self, delta: f32) {
@@ -46,9 +61,24 @@ impl Game {
         &mut self.player
     }
 
-
     /// Get a reference to the game's buildings.
     pub fn buildings(&self) -> &[Building] {
         self.buildings.as_ref()
+    }
+
+    /// Get a reference to the game's electricalBoxes.
+    pub fn electrical_boxes(&self) -> &[ElectricalBox] {
+        self.electrical_boxes.as_ref()
+    }
+
+    /// Gives a usize number of how many electrical boxes are still working
+    pub fn get_working_boxes(&self) -> usize {
+        let mut amount:usize = 0;
+        for ebox in self.electrical_boxes.iter(){
+            if !ebox.broken() {
+                amount += 1;
+            }
+        }
+        amount
     }
 }
