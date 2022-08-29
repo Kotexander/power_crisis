@@ -12,6 +12,8 @@ pub use electrical_box::*;
 
 use macroquad::math::Rect;
 
+const PIXELS_PER_UNIT: f32 = 16.0;
+
 pub struct Game {
     generator: Generator,
     player: Player,
@@ -23,11 +25,11 @@ pub struct Game {
 impl Game {
     pub fn new() -> Self {
         let generator = Generator::new(1.0, 0.1, true);
-        let player = Player::new(Rect::new(0.0, 0.0, 1.0, 1.0));
+        let player = Player::new(Rect::new(0.0, 0.0, 6.0 / PIXELS_PER_UNIT, 12.0/PIXELS_PER_UNIT));
 
         let buildings = vec![Building::new(Rect::new(-1.0, -1.0, 2.0, 2.0))];
 
-        let electrical_boxes = vec![ElectricalBox::new(Rect::new(-1.0, 3.0, 1.0, 1.0))];
+        let electrical_boxes = vec![ElectricalBox::new(Rect::new(-1.0, 3.0, 10.0 / PIXELS_PER_UNIT, 16.0 / PIXELS_PER_UNIT))];
         Self {
             generator,
             player,
