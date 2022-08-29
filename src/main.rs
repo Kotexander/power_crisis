@@ -1,5 +1,3 @@
-use std::default;
-
 use macroquad::prelude::*;
 
 mod game;
@@ -72,6 +70,7 @@ impl App {
             zoom: vec2(1.0 * scale, screen_width() / screen_height() * scale),
             ..Camera2D::default()
         };
+        set_camera(&camera);
 
         let assets = Assets::load().await;
 
@@ -79,7 +78,6 @@ impl App {
 
         let player_am = AnimationManager::new(1.0, &assets.player_animation);
 
-        set_camera(&camera);
         Self { 
             game, 
             camera,
