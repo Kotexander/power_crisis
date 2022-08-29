@@ -7,7 +7,7 @@ struct Assets {
     player_animation: Vec<Texture2D>,
     electrical_box: Texture2D,
     electrical_box_broken: Texture2D,
-} 
+}
 impl Assets {
     async fn load() -> Self {
         let mut player_animation = Vec::new();
@@ -19,17 +19,18 @@ impl Assets {
             player_animation.push(frame);
         }
 
-
         let electrical_box = load_texture("assets/electrical_box.png").await.unwrap();
         electrical_box.set_filter(FilterMode::Nearest);
 
-        let electrical_box_broken = load_texture("assets/electrical_box_broken.png").await.unwrap();
+        let electrical_box_broken = load_texture("assets/electrical_box_broken.png")
+            .await
+            .unwrap();
         electrical_box_broken.set_filter(FilterMode::Nearest);
 
         Self {
             player_animation,
             electrical_box,
-            electrical_box_broken
+            electrical_box_broken,
         }
     }
 }
@@ -54,13 +55,12 @@ impl AnimationManager {
         self.time_since_last_frame += delta;
 
         if self.time_since_last_frame >= self.frames_per_second {
-
             self.time_since_last_frame = 0.0;
             self.frame_index += 1;
 
             if self.frame_index >= self.number_of_frames {
                 self.frame_index = 0;
-            } 
+            }
         }
     }
 }
@@ -89,8 +89,8 @@ impl App {
 
         let player_am = AnimationManager::new(1.0, &assets.player_animation);
 
-        Self { 
-            game, 
+        Self {
+            game,
             camera,
             assets,
             player_facing_left,
@@ -110,7 +110,7 @@ impl App {
         self.update_animations(delta);
         self.game.update(delta);
     }
-    
+
     fn update_animations(&mut self, delta: f32) {
         self.player_am.update(delta);
     }
@@ -137,32 +137,30 @@ impl App {
         if is_key_down(KeyCode::S) {
             vel.y -= 1.0;
         }
-        self.game.player_mut().add_velocity(vel.normalize_or_zero() * speed);
-
+        self.game
+            .player_mut()
+            .add_velocity(vel.normalize_or_zero() * speed);
     }
 
     fn draw_player(&self) {
         let player = self.game.player();
-        
+
         let texture = &self.assets.player_animation[self.player_am.frame_index];
 
         let draw_param = DrawTextureParams {
-            dest_size: Some(vec2(texture.width()/16.0, texture.height()/16.0)),
+            dest_size: Some(vec2(texture.width() / 16.0, texture.height() / 16.0)),
             flip_x: self.player_facing_left,
             flip_y: true,
             ..DrawTextureParams::default()
         };
-        draw_texture_ex(*texture, player.pos().x, player.pos().y, WHITE, draw_param);
+
+        let hit_box = player.hit_box();
+        draw_texture_ex(*texture, hit_box.x, hit_box.y, WHITE, draw_param);
     }
 
     fn draw_building(&self, building: &Building) {
-        draw_rectangle(
-            building.pos().x,
-            building.pos().y,
-            building.size().x,
-            building.size().y,
-            RED,
-        );
+        let hit_box = building.hit_box();
+        draw_rectangle(hit_box.x, hit_box.y, hit_box.w, hit_box.h, RED);
     }
 
     fn draw_buildings(&self) {
@@ -172,22 +170,20 @@ impl App {
     }
 
     fn draw_electical_box(&self, electrical_box: &ElectricalBox) {
-
-        let texture: Texture2D;
-        if *electrical_box.broken() {
-            texture = self.assets.electrical_box_broken;
-        }
-        else {
-            texture = self.assets.electrical_box;
-        }
+        let texture: &Texture2D = if *electrical_box.broken() {
+            &self.assets.electrical_box_broken
+        } else {
+            &self.assets.electrical_box
+        };
 
         let draw_param = DrawTextureParams {
-            dest_size: Some(vec2(texture.width()/16.0, texture.height()/16.0)),
+            dest_size: Some(vec2(texture.width() / 16.0, texture.height() / 16.0)),
             flip_y: true,
             ..DrawTextureParams::default()
         };
 
-        draw_texture_ex(texture, electrical_box.pos().x, electrical_box.pos().y, WHITE, draw_param);
+        let hit_box = electrical_box.hit_box();
+        draw_texture_ex(*texture, hit_box.x, hit_box.y, WHITE, draw_param);
     }
 
     fn draw_electical_boxes(&self) {
@@ -204,7 +200,6 @@ impl App {
 
         set_camera(&self.camera);
     }
-
 }
 
 #[macroquad::main("Power Crisis")]
@@ -214,13 +209,12 @@ async fn main() {
         clear_background(BLACK);
 
         // TODO: remove in final release
-        if is_key_pressed(KeyCode::Escape){
+        if is_key_pressed(KeyCode::Escape) {
             break;
         }
 
         app.draw();
         app.update(get_frame_time());
-
 
         next_frame().await
     }

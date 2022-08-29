@@ -7,10 +7,10 @@ pub use player::*;
 mod building;
 pub use building::*;
 
-mod electricalBox;
-pub use electricalBox::*;
+mod electrical_box;
+pub use electrical_box::*;
 
-use macroquad::math::vec2;
+use macroquad::math::Rect;
 
 pub struct Game {
     generator: Generator,
@@ -23,16 +23,12 @@ pub struct Game {
 impl Game {
     pub fn new() -> Self {
         let generator = Generator::new(1.0, 0.1, true);
-        let player = Player::new(vec2(0.0, 0.0), vec2(1.0, 1.0));
+        let player = Player::new(Rect::new(0.0, 0.0, 1.0, 1.0));
 
-        let buildings = vec![
-            Building::new(vec2(-1.0, -1.0), vec2(2.0, 2.0)),
-        ];
+        let buildings = vec![Building::new(Rect::new(-1.0, -1.0, 2.0, 2.0))];
 
-        let electrical_boxes = vec! [
-            ElectricalBox::new(vec2(-1.0, 3.0))
-        ];
-        Self { 
+        let electrical_boxes = vec![ElectricalBox::new(Rect::new(-1.0, 3.0, 1.0, 1.0))];
+        Self {
             generator,
             player,
             buildings,
@@ -73,8 +69,8 @@ impl Game {
 
     /// Gives a usize number of how many electrical boxes are still working
     pub fn get_working_boxes(&self) -> usize {
-        let mut amount:usize = 0;
-        for ebox in self.electrical_boxes.iter(){
+        let mut amount: usize = 0;
+        for ebox in self.electrical_boxes.iter() {
             if !ebox.broken() {
                 amount += 1;
             }

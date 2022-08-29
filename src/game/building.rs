@@ -1,22 +1,16 @@
-use macroquad::math::Vec2;
+use macroquad::math::Rect;
 
 pub struct Building {
-    pos: Vec2,
-    size: Vec2
+    hit_box: Rect,
 }
 
 impl Building {
-    pub fn new(pos: Vec2, size: Vec2) -> Self {
-        Self { pos, size }
+    pub fn new(hit_box: Rect) -> Self {
+        Self { hit_box }
     }
 
-    /// Get a reference to the building's pos.
-    pub fn pos(&self) -> &Vec2 {
-        &self.pos
-    }
-
-    /// Get a reference to the building's size.
-    pub fn size(&self) -> &Vec2 {
-        &self.size
+    /// Get a reference to the building's hit box.
+    pub fn hit_box(&self) -> &Rect {
+        &self.hit_box
     }
 }
