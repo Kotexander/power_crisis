@@ -76,6 +76,7 @@ struct App {
     assets: Assets,
     player_facing_left: bool,
     player_am: AnimationManager,
+    lightning: Lightning,
 }
 impl App {
     async fn new() -> Self {
@@ -94,19 +95,25 @@ impl App {
 
         let player_am = AnimationManager::new(1.0, &assets.player_animation);
 
+        let lightning = Lightning::new(vec2(1.0, 1.0), 0.012);
+
         Self {
             game,
             camera,
             assets,
             player_facing_left,
             player_am,
+            lightning,
         }
     }
 
     fn draw(&self) {
+        clear_background(BLACK);
+
         self.draw_electical_boxes();
         self.draw_buildings();
         self.draw_player();
+        self.draw_lighning();
         self.draw_ui();
         
         self.draw_hit_boxes();
@@ -125,6 +132,7 @@ impl App {
         self.player_key_input();
         self.update_animations(delta);
         self.game.update(delta);
+        self.lightning.update(delta);
     }
 
     fn update_animations(&mut self, delta: f32) {
@@ -214,6 +222,24 @@ impl App {
         }
     }
 
+    fn draw_lighning(&self) {
+        let len = self.lightning.points().len();
+
+        for (i, point) in self.lightning.points().iter().enumerate() {
+            if i+1 == len {
+                break;
+            }
+            let bottom_point = point;
+            let top_point = self.lightning.points()[i+1];
+
+            draw_circle(self.lightning.points()[i].x, self.lightning.points()[i].y, 0.01, BLUE);
+
+            draw_line(bottom_point.x, bottom_point.y, top_point.x, top_point.y, 0.1, BLUE);
+        }
+
+    }
+
+
     fn draw_generator_ui(&self) {
 
         draw_rectangle(10., 10., 110., 20., DARKGRAY);
@@ -242,7 +268,6 @@ impl App {
             self.draw_hit_box_electrical_box(electrical_box);
         }
     }
-
 
     fn draw_hit_box_building(&self, building: &Building) {
         self.draw_hit_box(building.hit_box());
@@ -273,7 +298,6 @@ impl App {
 async fn main() {
     let mut app = App::new().await;
     loop {
-        clear_background(BLACK);
 
         // TODO: remove in final release
         if is_key_pressed(KeyCode::Escape) {

@@ -10,7 +10,10 @@ pub use building::*;
 mod electrical_box;
 pub use electrical_box::*;
 
-use macroquad::math::Rect;
+mod lightning;
+pub use lightning::*;
+
+use macroquad::math::{vec2, Rect};
 
 const PIXELS_PER_UNIT: f32 = 16.0;
 
