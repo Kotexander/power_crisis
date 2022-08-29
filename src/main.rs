@@ -7,6 +7,7 @@ struct Assets {
     player_animation: Vec<Texture2D>,
     electrical_box: Texture2D,
     electrical_box_broken: Texture2D,
+    repair_kit: Texture2D,
 }
 impl Assets {
     async fn load() -> Self {
@@ -27,10 +28,14 @@ impl Assets {
             .unwrap();
         electrical_box_broken.set_filter(FilterMode::Nearest);
 
+        let repair_kit = load_texture("assets/repair_kit.png").await.unwrap();
+        repair_kit.set_filter(FilterMode::Nearest);
+
         Self {
             player_animation,
             electrical_box,
             electrical_box_broken,
+            repair_kit,
         }
     }
 }
@@ -102,9 +107,18 @@ impl App {
         self.draw_electical_boxes();
         self.draw_buildings();
         self.draw_player();
-        self.draw_generator_ui();
-
+        self.draw_ui();
+        
         self.draw_hit_boxes();
+    }
+    
+    fn draw_ui(&self) {
+        set_default_camera();
+
+        self.draw_generator_ui();
+        self.draw_repair_kit_ui();
+
+        set_camera(&self.camera);
     }
 
     fn update(&mut self, delta: f32) {
@@ -120,6 +134,12 @@ impl App {
     fn player_key_input(&mut self) {
         let mut vel = vec2(0.0, 0.0);
         let mut speed = 2.0;
+
+        if is_key_pressed(KeyCode::Space) {
+            if *self.game.number_of_repair_kits() > 0 {
+                *self.game.number_of_repair_kits_mut() -= 1;
+            }
+        }
 
         if is_key_down(KeyCode::LeftShift) {
             speed *= 1.5
@@ -195,14 +215,23 @@ impl App {
     }
 
     fn draw_generator_ui(&self) {
-        set_default_camera();
 
         draw_rectangle(10., 10., 110., 20., DARKGRAY);
         draw_rectangle(15., 15., 100. * self.game.generator().feul(), 10., YELLOW);
 
-        set_camera(&self.camera);
     }
 
+    fn draw_repair_kit_ui(&self) {
+
+        let width = (*self.game.max_number_of_repair_kits() as f32 + 1.0)*25.0+5.0;
+        draw_rectangle(10., 40., width, 20., DARKGRAY);
+
+        for i in 1..=*self.game.number_of_repair_kits() {
+            let offset = i as f32 * 25.0;
+            draw_rectangle(15.0 + offset, 45.0, 20.0, 10., RED);
+        }
+        draw_texture(self.assets.repair_kit, 15.0, 45.0, WHITE)
+    }
 
     fn draw_hit_box_electrical_box(&self, electrical_box: &ElectricalBox) {
         self.draw_hit_box(electrical_box.hit_box());

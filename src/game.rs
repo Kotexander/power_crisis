@@ -17,6 +17,7 @@ pub struct Game {
     player: Player,
     buildings: Vec<Building>,
     number_of_repair_kits: u32,
+    max_number_of_repair_kits: u32,
     electrical_boxes: Vec<ElectricalBox>,
 }
 
@@ -28,11 +29,16 @@ impl Game {
         let buildings = vec![Building::new(Rect::new(-1.0, -1.0, 2.0, 2.0))];
 
         let electrical_boxes = vec![ElectricalBox::new(Rect::new(-1.0, 3.0, 1.0, 1.0))];
+
+        let max_number_of_repair_kits = 5;
+        let number_of_repair_kits = max_number_of_repair_kits;
+
         Self {
             generator,
             player,
             buildings,
-            number_of_repair_kits: 0,
+            number_of_repair_kits,
+            max_number_of_repair_kits,
             electrical_boxes,
         }
     }
@@ -62,6 +68,21 @@ impl Game {
         self.buildings.as_ref()
     }
 
+    /// Get a reference to the game's number of repair kits.
+    pub fn number_of_repair_kits(&self) -> &u32 {
+        &self.number_of_repair_kits
+    }
+
+    /// Get a mutable reference to the game's number of repair kits.
+    pub fn number_of_repair_kits_mut(&mut self) -> &mut u32 {
+        &mut self.number_of_repair_kits
+    }
+
+    /// Get a reference to the game's max number of repair kits.
+    pub fn max_number_of_repair_kits(&self) -> &u32 {
+        &self.max_number_of_repair_kits
+    }
+
     /// Get a reference to the game's electricalBoxes.
     pub fn electrical_boxes(&self) -> &[ElectricalBox] {
         self.electrical_boxes.as_ref()
@@ -77,4 +98,5 @@ impl Game {
         }
         amount
     }
+
 }
