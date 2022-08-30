@@ -53,7 +53,7 @@ impl Game {
         let puddles = vec![Puddle::new(Rect::new(3.0, 3.0, 1.0, 1.0))];
 
         let map_width = 1600.0 / PIXELS_PER_UNIT;
-        let map_height = 1600.0 / PIXELS_PER_UNIT;
+        let map_height = 800.0 / PIXELS_PER_UNIT;
 
         Self {
             generator,

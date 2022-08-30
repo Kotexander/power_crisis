@@ -60,4 +60,14 @@ impl Lightning {
             self.new_points();
         }
     }
+
+    /// Gives a reference to the ligtning's max duration.
+    pub fn max_duration(&self) -> &f32 {
+        &self.max_duration
+    }
+
+    /// Gives a reference to the ligtning's current duration.
+    pub fn current_duration(&self) -> &f32 {
+        &self.current_duration
+    }
 }

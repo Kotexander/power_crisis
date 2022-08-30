@@ -1,4 +1,4 @@
-use macroquad::prelude::*;
+use macroquad::{prelude::*, audio::{load_sound, Sound, play_sound, PlaySoundParams}};
 
 mod game;
 use game::*;
@@ -16,6 +16,7 @@ struct Assets {
     sketch: Texture2D,
     puddle: Texture2D,
     map: Texture2D,
+    lightning_sound: Sound,
 }
 impl Assets {
     async fn load() -> Self {
@@ -47,6 +48,9 @@ impl Assets {
 
         let map = load_texture("assets/map.png").await.unwrap();
         map.set_filter(FilterMode::Nearest);
+
+        let lightning_sound = load_sound("assets/lightning.wav").await.unwrap();
+
         Self {
             player_animation,
             electrical_box,
@@ -55,6 +59,8 @@ impl Assets {
             sketch,
             puddle,
             map,
+
+            lightning_sound,
         }
     }
 }
@@ -114,7 +120,7 @@ impl App {
 
         let player_am = AnimationManager::new(1.0, &assets.player_animation);
 
-        let lightning = Lightning::new(vec2(1.0, 1.0), 0.012);
+        let lightning = App::new_lightning(&assets.lightning_sound, vec2(1.0, 1.0), 0.012);
 
         Self {
             game,
@@ -172,6 +178,8 @@ impl App {
         let player_center = vec2(self.game.player().hit_box().x+self.game.player().hit_box().w/2.0, self.game.player().hit_box().y+self.game.player().hit_box().h/2.0,);
 
         self.camera.offset = -player_center*self.camera.zoom;
+        self.lock_camera();
+
     }
 
     fn update_animations(&mut self, delta: f32) {
@@ -349,11 +357,50 @@ impl App {
         self.draw_hit_box_puddles();
         self.draw_hit_box_player();
     }
+
+    fn new_lightning(sound: &Sound, origin: Vec2, max_duration : f32) -> Lightning {
+        let sound_params = PlaySoundParams {
+            ..PlaySoundParams::default()
+        };
+    
+        play_sound(*sound, sound_params);
+
+        let lightning = Lightning::new(origin, max_duration);
+        lightning
+    }
+
+    fn lock_camera(&mut self) {
+
+        let screen_x = self.camera.screen_to_world(vec2(0.0, 0.0)).x;
+        let screen_y = self.camera.screen_to_world(vec2(0.0, screen_height())).y;
+
+        if screen_x < 0.0 {
+            self.camera.offset.x = -1.0;
+        }
+        if screen_y < 0.0 {
+            self.camera.offset.y = -1.0;
+        }
+
+        let screen_x = self.camera.screen_to_world(vec2(screen_width(), 0.0)).x;
+        let screen_y = self.camera.screen_to_world(vec2(0.0, 0.0)).y;
+        
+        let width = 1600.0/PIXELS_PER_UNIT;
+        let height = 800.0/PIXELS_PER_UNIT;
+
+        if screen_x > width {
+            self.camera.offset.x = -width*self.camera.zoom.x + 1.0;
+        }
+        if screen_y > height {
+            self.camera.offset.y = -height*self.camera.zoom.y + 1.0;
+        }
+    }
 }
 
 #[macroquad::main("Power Crisis")]
 async fn main() {
     let mut app = App::new().await;
+
+    
     loop {
 
         // TODO: remove in final release
@@ -366,4 +413,6 @@ async fn main() {
 
         next_frame().await
     }
+
+
 }
