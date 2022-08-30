@@ -14,6 +14,8 @@ struct Assets {
     electrical_box_broken: Texture2D,
     repair_kit: Texture2D,
     sketch: Texture2D,
+    puddle: Texture2D,
+    map: Texture2D,
 }
 impl Assets {
     async fn load() -> Self {
@@ -39,12 +41,20 @@ impl Assets {
 
         let sketch = load_texture("assets/sketch.png").await.unwrap();
         sketch.set_filter(FilterMode::Nearest);
+
+        let puddle = load_texture("assets/puddle.png").await.unwrap();
+        puddle.set_filter(FilterMode::Nearest);
+
+        let map = load_texture("assets/map.png").await.unwrap();
+        map.set_filter(FilterMode::Nearest);
         Self {
             player_animation,
             electrical_box,
             electrical_box_broken,
             repair_kit,
             sketch,
+            puddle,
+            map,
         }
     }
 }
@@ -119,13 +129,7 @@ impl App {
     fn draw(&self) {
         clear_background(BLACK);
 
-        let texture = &self.assets.sketch;
-        let draw_param = DrawTextureParams{
-            dest_size: Some(vec2(texture.width()/PIXELS_PER_UNIT, texture.height()/PIXELS_PER_UNIT)),
-            flip_y: true,
-            ..DrawTextureParams::default()
-        };
-        draw_texture_ex(self.assets.sketch, 0.0, 0.0, WHITE, draw_param);
+        self.draw_map();
 
         self.draw_electical_boxes();
         self.draw_buildings();
@@ -139,7 +143,17 @@ impl App {
             self.draw_hit_boxes();
         }
     }
-    
+  
+    fn draw_map(&self) {
+        let texture = &self.assets.map;
+        let draw_param = DrawTextureParams{
+            dest_size: Some(vec2(texture.width()/PIXELS_PER_UNIT, texture.height()/PIXELS_PER_UNIT)),
+            flip_y: true,
+            ..DrawTextureParams::default()
+        };
+        draw_texture_ex(*texture, 0.0, 0.0, WHITE, draw_param);
+    }
+
     fn draw_ui(&self) {
         set_default_camera();
 
@@ -265,8 +279,15 @@ impl App {
     }
 
     fn draw_puddle(&self, puddle: &Puddle) {
+        let texture = &self.assets.puddle;
+        let draw_param = DrawTextureParams {
+            dest_size: Some(vec2(texture.width() / PIXELS_PER_UNIT, texture.height() / PIXELS_PER_UNIT)),
+            flip_y: true,
+            ..DrawTextureParams::default()
+        };
+
         let hit_box = puddle.hit_box();
-        draw_rectangle(hit_box.x, hit_box.y, hit_box.w, hit_box.h, BLUE);
+        draw_texture_ex(*texture, hit_box.x, hit_box.y, WHITE, draw_param);
     }
 
     fn draw_puddles(&self){
