@@ -3,6 +3,9 @@ use macroquad::prelude::*;
 mod game;
 use game::*;
 
+mod lightning;
+use lightning::*;
+
 pub const PIXELS_PER_UNIT: f32 = 16.0;
 
 struct Assets {
