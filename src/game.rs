@@ -31,7 +31,10 @@ pub struct Game {
     max_number_of_repair_kits: u32,
     electrical_boxes: Vec<ElectricalBox>,
 
-    puddles: Vec<Puddle>
+    puddles: Vec<Puddle>,
+
+    map_width: f32,
+    map_height: f32,
 }
 
 impl Game {
@@ -49,6 +52,9 @@ impl Game {
 
         let puddles = vec![Puddle::new(Rect::new(3.0, 3.0, 1.0, 1.0))];
 
+        let map_width = 1600.0 / PIXELS_PER_UNIT;
+        let map_height = 1600.0 / PIXELS_PER_UNIT;
+
         Self {
             generator,
             player,
@@ -57,12 +63,15 @@ impl Game {
             max_number_of_repair_kits,
             electrical_boxes,
             puddles,
+            map_width,
+            map_height
         }
     }
 
     pub fn update(&mut self, delta: f32) {
         self.generator.update(delta);
         self.player.update_pos(self.which_drag(), delta);
+        self.map_collisions();
         self.player_collisions();
     }
 
@@ -77,6 +86,29 @@ impl Game {
             if let Some(v) = aabb_collision(self.player.hit_box(), self.electrical_boxes()[i].hit_box()) {
                 self.player.hit_box_mut().move_to(v);
             }
+        }
+    }
+
+    fn map_collisions(&mut self) {
+        if self.player.hit_box().left() < 0.0 {
+            let x = 0.0;
+            let y = self.player.hit_box().y;
+            self.player.hit_box_mut().move_to(vec2(x, y));
+        }
+        if self.player.hit_box().top() < 0.0 {
+            let x = self.player.hit_box().x;
+            let y = 0.0;
+            self.player.hit_box_mut().move_to(vec2(x, y));
+        }
+        if self.player.hit_box().right() > self.map_width {
+            let x = self.map_width - self.player.hit_box().w;
+            let y = self.player.hit_box().y;
+            self.player.hit_box_mut().move_to(vec2(x, y));
+        }
+        if self.player.hit_box().bottom() > self.map_height {
+            let x = self.player.hit_box().x;
+            let y = self.map_height - self.player.hit_box().h;
+            self.player.hit_box_mut().move_to(vec2(x, y));
         }
     }
 
