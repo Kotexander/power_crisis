@@ -3,6 +3,9 @@ use macroquad::prelude::*;
 mod game;
 use game::*;
 
+mod lightning;
+use lightning::*;
+
 struct Assets {
     player_animation: Vec<Texture2D>,
     electrical_box: Texture2D,
@@ -116,7 +119,10 @@ impl App {
         self.draw_lighning();
         self.draw_ui();
         
-        self.draw_hit_boxes();
+        // TODO: remove in final release
+        if is_key_down(KeyCode::Tab) {
+            self.draw_hit_boxes();
+        }
     }
     
     fn draw_ui(&self) {
@@ -232,7 +238,7 @@ impl App {
             let bottom_point = point;
             let top_point = self.lightning.points()[i+1];
 
-            draw_circle(self.lightning.points()[i].x, self.lightning.points()[i].y, 0.01, BLUE);
+            draw_circle(self.lightning.points()[i].x, self.lightning.points()[i].y, 0.05, BLUE);
 
             draw_line(bottom_point.x, bottom_point.y, top_point.x, top_point.y, 0.1, BLUE);
         }

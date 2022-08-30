@@ -22,8 +22,8 @@ impl Lightning {
 
     pub fn gen_lightning_points(origin: Vec2) -> Vec<Vec2> {
 
-        let mut bottom_point = origin.clone();
-        let mut top_point = origin.clone();
+        let mut bottom_point = origin;
+        let mut top_point = origin;
 
         let mut points = Vec::new();
         points.push(origin);
@@ -47,7 +47,7 @@ impl Lightning {
     }
 
     pub fn new_points(&mut self) {
-        if self.points.len() > 0 {
+        if !self.points.is_empty() {
             let points = Lightning::gen_lightning_points(self.origin);
             self.points = points;
         }

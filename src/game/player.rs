@@ -15,6 +15,11 @@ impl Player {
         &self.hit_box
     }
 
+    /// Get a mutable reference to the player's hit box.
+    pub fn hit_box_mut(&mut self) -> &mut Rect {
+        &mut self.hit_box
+    }
+
     /// Get a reference to the player's velocity.
     pub fn vel(&self) -> &Vec2 {
         &self.vel

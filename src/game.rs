@@ -10,10 +10,7 @@ pub use building::*;
 mod electrical_box;
 pub use electrical_box::*;
 
-mod lightning;
-pub use lightning::*;
-
-use macroquad::math::{vec2, Rect};
+use macroquad::math::{Vec2, vec2, Rect};
 
 const PIXELS_PER_UNIT: f32 = 16.0;
 
@@ -29,7 +26,7 @@ pub struct Game {
 impl Game {
     pub fn new() -> Self {
         let generator = Generator::new(1.0, 0.1, true);
-        let player = Player::new(Rect::new(0.0, 0.0, 6.0 / PIXELS_PER_UNIT, 12.0/PIXELS_PER_UNIT));
+        let player = Player::new(Rect::new(0.0, 0.0, 6.0 / PIXELS_PER_UNIT, 6.0/PIXELS_PER_UNIT));
 
         let buildings = vec![Building::new(Rect::new(-1.0, -1.0, 2.0, 2.0))];
 
@@ -50,7 +47,22 @@ impl Game {
 
     pub fn update(&mut self, delta: f32) {
         self.generator.update(delta);
-        self.player.update_pos(0.75, delta)
+        self.player.update_pos(0.75, delta);
+        self.player_collisions();
+    }
+
+    fn player_collisions(&mut self ) {
+        for i in 0..self.buildings().len() {
+            if let Some(v) = aabb_collision(self.player.hit_box(), self.buildings()[i].hit_box()) {
+                self.player.hit_box_mut().move_to(v);
+            }
+        }
+
+        for i in 0..self.electrical_boxes().len() {
+            if let Some(v) = aabb_collision(self.player.hit_box(), self.electrical_boxes()[i].hit_box()) {
+                self.player.hit_box_mut().move_to(v);
+            }
+        }
     }
 
     /// Get a reference to the game's generator.
@@ -104,4 +116,37 @@ impl Game {
         amount
     }
 
+}
+
+fn aabb_collision(first: &Rect, other: &Rect) -> Option<Vec2> {
+    if !overlaps(first, other) {
+        return None;
+    }
+
+    let bottom_in = other.top() - first.bottom();
+    let top_in = first.top() - other.bottom();
+    
+    let left_in = other.left() - first.right();
+    let right_in = first.left() - other.right();
+
+
+    if bottom_in < top_in && bottom_in < left_in && bottom_in < right_in{
+        return Some(vec2(first.x, other.bottom()));
+    }
+    else if top_in < left_in && top_in < right_in {
+        return Some(vec2(first.x, other.top() - first.h));
+    }
+    if left_in < right_in {
+        return Some(vec2(other.right(), first.y));
+    }
+    else {
+        return Some(vec2(other.left() - first.w, first.y));
+    }
+}
+
+pub fn overlaps(first: &Rect, other: &Rect) -> bool {
+    first.left() < other.right()
+        && first.right() > other.left()
+        && first.top() < other.bottom()
+        && first.bottom() > other.top()
 }
