@@ -10,17 +10,28 @@ pub use building::*;
 mod electrical_box;
 pub use electrical_box::*;
 
+mod puddle;
+pub use puddle::*;
+
 use macroquad::math::{Vec2, vec2, Rect};
 
 use crate::PIXELS_PER_UNIT;
 
+pub trait HitBox {
+    fn hit_box(&self) -> &Rect;
+}
+
 pub struct Game {
     generator: Generator,
     player: Player,
+
     buildings: Vec<Building>,
+
     number_of_repair_kits: u32,
     max_number_of_repair_kits: u32,
     electrical_boxes: Vec<ElectricalBox>,
+
+    puddles: Vec<Puddle>
 }
 
 impl Game {
@@ -35,6 +46,9 @@ impl Game {
         let max_number_of_repair_kits = 5;
         let number_of_repair_kits = max_number_of_repair_kits;
 
+
+        let puddles = vec![Puddle::new(Rect::new(3.0, 3.0, 1.0, 1.0))];
+
         Self {
             generator,
             player,
@@ -42,12 +56,13 @@ impl Game {
             number_of_repair_kits,
             max_number_of_repair_kits,
             electrical_boxes,
+            puddles,
         }
     }
 
     pub fn update(&mut self, delta: f32) {
         self.generator.update(delta);
-        self.player.update_pos(0.75, delta);
+        self.player.update_pos(self.which_drag(), delta);
         self.player_collisions();
     }
 
@@ -116,6 +131,21 @@ impl Game {
         amount
     }
 
+    /// Get a reference to the game's puddles.
+    pub fn puddles(&self) -> &[Puddle] {
+        self.puddles.as_ref()
+    }
+
+    fn which_drag(&self) -> f32 {
+        for puddle in self.puddles() {
+            if puddle.hit_box().overlaps(self.player.hit_box()) {
+                // puddle drag
+                return 0.5;
+            }
+        }
+        // defualt drag
+        0.75
+    }
 }
 
 fn aabb_collision(first: &Rect, other: &Rect) -> Option<Vec2> {

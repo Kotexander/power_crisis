@@ -1,5 +1,7 @@
 use macroquad::math::Rect;
 
+use super::HitBox;
+
 pub struct ElectricalBox {
     hit_box: Rect,
     broken: bool,
@@ -15,8 +17,11 @@ impl ElectricalBox {
         &self.broken
     }
 
+}
+
+impl HitBox for ElectricalBox {
     /// Get a reference to the electrical box's hit box.
-    pub fn hit_box(&self) -> &Rect {
+    fn hit_box(&self) -> &Rect {
         &self.hit_box
     }
 }

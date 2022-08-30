@@ -129,6 +129,7 @@ impl App {
 
         self.draw_electical_boxes();
         self.draw_buildings();
+        self.draw_puddles();
         self.draw_player();
         self.draw_lightning();
         self.draw_ui();
@@ -263,6 +264,16 @@ impl App {
 
     }
 
+    fn draw_puddle(&self, puddle: &Puddle) {
+        let hit_box = puddle.hit_box();
+        draw_rectangle(hit_box.x, hit_box.y, hit_box.w, hit_box.h, BLUE);
+    }
+
+    fn draw_puddles(&self){
+        for puddle in self.game.puddles() {
+            self.draw_puddle(puddle);
+        }
+    }
 
     fn draw_generator_ui(&self) {
 
@@ -283,38 +294,39 @@ impl App {
         draw_texture(self.assets.repair_kit, 15.0, 45.0, WHITE)
     }
 
-    fn draw_hit_box_electrical_box(&self, electrical_box: &ElectricalBox) {
-        self.draw_hit_box(electrical_box.hit_box());
+
+    fn draw_hit_box<T: HitBox>(&self, object: &T) {
+        let hit_box = object.hit_box();
+        draw_rectangle_lines(hit_box.x, hit_box.y, hit_box.w, hit_box.h, 0.1, WHITE);
     }
     
     fn draw_hit_box_electrical_boxes(&self) {
         for electrical_box in self.game.electrical_boxes() {
-            self.draw_hit_box_electrical_box(electrical_box);
+            self.draw_hit_box(electrical_box);
         }
-    }
-
-    fn draw_hit_box_building(&self, building: &Building) {
-        self.draw_hit_box(building.hit_box());
     }
     
     fn draw_hit_box_buildings(&self) {
         for building in self.game.buildings() {
-            self.draw_hit_box_building(building);
+            self.draw_hit_box(building);
+        }
+    }
+
+    fn draw_hit_box_puddles(&self) {
+        for puddle in self.game.puddles() {
+            self.draw_hit_box(puddle);
         }
     }
 
     fn draw_hit_box_player(&self) {
-        self.draw_hit_box(self.game.player().hit_box());
+        self.draw_hit_box(self.game.player());
     }
 
     fn draw_hit_boxes(&self) {
         self.draw_hit_box_buildings();
         self.draw_hit_box_electrical_boxes();
+        self.draw_hit_box_puddles();
         self.draw_hit_box_player();
-    }
-
-    fn draw_hit_box(&self, hit_box: &Rect) {
-        draw_rectangle_lines(hit_box.x, hit_box.y, hit_box.w, hit_box.h, 0.1, WHITE);
     }
 }
 
