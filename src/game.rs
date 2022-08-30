@@ -12,7 +12,7 @@ pub use electrical_box::*;
 
 use macroquad::math::{Vec2, vec2, Rect};
 
-const PIXELS_PER_UNIT: f32 = 16.0;
+use crate::PIXELS_PER_UNIT;
 
 pub struct Game {
     generator: Generator,
