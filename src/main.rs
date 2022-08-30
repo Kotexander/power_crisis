@@ -3,11 +3,14 @@ use macroquad::prelude::*;
 mod game;
 use game::*;
 
+pub const PIXELS_PER_UNIT: f32 = 16.0;
+
 struct Assets {
     player_animation: Vec<Texture2D>,
     electrical_box: Texture2D,
     electrical_box_broken: Texture2D,
     repair_kit: Texture2D,
+    sketch: Texture2D,
 }
 impl Assets {
     async fn load() -> Self {
@@ -31,11 +34,14 @@ impl Assets {
         let repair_kit = load_texture("assets/repair_kit.png").await.unwrap();
         repair_kit.set_filter(FilterMode::Nearest);
 
+        let sketch = load_texture("assets/sketch.png").await.unwrap();
+        sketch.set_filter(FilterMode::Nearest);
         Self {
             player_animation,
             electrical_box,
             electrical_box_broken,
             repair_kit,
+            sketch,
         }
     }
 }
@@ -110,10 +116,18 @@ impl App {
     fn draw(&self) {
         clear_background(BLACK);
 
+        let texture = &self.assets.sketch;
+        let draw_param = DrawTextureParams{
+            dest_size: Some(vec2(texture.width()/PIXELS_PER_UNIT, texture.height()/PIXELS_PER_UNIT)),
+            flip_y: true,
+            ..DrawTextureParams::default()
+        };
+        draw_texture_ex(self.assets.sketch, 0.0, 0.0, WHITE, draw_param);
+
         self.draw_electical_boxes();
         self.draw_buildings();
         self.draw_player();
-        self.draw_lighning();
+        self.draw_lightning();
         self.draw_ui();
         
         self.draw_hit_boxes();
@@ -133,6 +147,10 @@ impl App {
         self.update_animations(delta);
         self.game.update(delta);
         self.lightning.update(delta);
+
+        let player_center = vec2(self.game.player().hit_box().x+self.game.player().hit_box().w/2.0, self.game.player().hit_box().y+self.game.player().hit_box().h/2.0,);
+
+        self.camera.offset = -player_center*self.camera.zoom;
     }
 
     fn update_animations(&mut self, delta: f32) {
@@ -178,7 +196,7 @@ impl App {
         let texture = &self.assets.player_animation[self.player_am.frame_index];
 
         let draw_param = DrawTextureParams {
-            dest_size: Some(vec2(texture.width() / 16.0, texture.height() / 16.0)),
+            dest_size: Some(vec2(texture.width() / PIXELS_PER_UNIT, texture.height() / PIXELS_PER_UNIT)),
             flip_x: self.player_facing_left,
             flip_y: true,
             ..DrawTextureParams::default()
@@ -207,7 +225,7 @@ impl App {
         };
 
         let draw_param = DrawTextureParams {
-            dest_size: Some(vec2(texture.width() / 16.0, texture.height() / 16.0)),
+            dest_size: Some(vec2(texture.width() / PIXELS_PER_UNIT, texture.height() / PIXELS_PER_UNIT)),
             flip_y: true,
             ..DrawTextureParams::default()
         };
@@ -222,7 +240,7 @@ impl App {
         }
     }
 
-    fn draw_lighning(&self) {
+    fn draw_lightning(&self) {
         let len = self.lightning.points().len();
 
         for (i, point) in self.lightning.points().iter().enumerate() {
