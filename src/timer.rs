@@ -1,4 +1,4 @@
-use macroquad::rand::{gen_range};
+use macroquad::rand::gen_range;
 
 pub struct Timer {
     min_time: f32,
@@ -14,7 +14,7 @@ impl Timer {
             min_time,
             max_time,
             rand_time,
-            current_time
+            current_time,
         }
     }
 
@@ -30,7 +30,7 @@ impl Timer {
     }
 
     /// Returns bool if current time excides the random time
-    pub fn is_active(&self) -> bool{
+    pub fn is_active(&self) -> bool {
         if self.current_time >= self.rand_time {
             return true;
         }

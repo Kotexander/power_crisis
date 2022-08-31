@@ -1,4 +1,7 @@
-use macroquad::{prelude::*, audio::{load_sound, Sound, play_sound, PlaySoundParams}};
+use macroquad::{
+    audio::{load_sound, play_sound, PlaySoundParams, Sound},
+    prelude::*,
+};
 
 mod game;
 use game::*;
@@ -16,7 +19,6 @@ struct Assets {
     electrical_box: Texture2D,
     electrical_box_broken: Texture2D,
     repair_kit: Texture2D,
-    sketch: Texture2D,
     puddle: Texture2D,
     map: Texture2D,
     lightning_sound: Sound,
@@ -43,9 +45,6 @@ impl Assets {
         let repair_kit = load_texture("assets/repair_kit.png").await.unwrap();
         repair_kit.set_filter(FilterMode::Nearest);
 
-        let sketch = load_texture("assets/sketch.png").await.unwrap();
-        sketch.set_filter(FilterMode::Nearest);
-
         let puddle = load_texture("assets/puddle.png").await.unwrap();
         puddle.set_filter(FilterMode::Nearest);
 
@@ -59,7 +58,6 @@ impl Assets {
             electrical_box,
             electrical_box_broken,
             repair_kit,
-            sketch,
             puddle,
             map,
 
@@ -109,7 +107,7 @@ struct App {
 }
 impl App {
     async fn new() -> Self {
-        let game = Game::new();
+        let game = Game::load();
 
         let scale = 0.1;
         let camera = Camera2D {
@@ -124,7 +122,11 @@ impl App {
 
         let player_am = AnimationManager::new(1.0, &assets.player_animation);
 
-        let lightnings = vec![App::new_lightning(&assets.lightning_sound, vec2(1.0, 1.0), 1.0)];
+        let lightnings = vec![App::new_lightning(
+            &assets.lightning_sound,
+            vec2(1.0, 1.0),
+            1.0,
+        )];
 
         let lightning_timer = Timer::new(5.0, 10.0);
 
@@ -145,22 +147,24 @@ impl App {
         self.draw_map();
 
         self.draw_electical_boxes();
-        self.draw_buildings();
         self.draw_puddles();
         self.draw_player();
         self.draw_lightnings();
-        
+
         self.draw_ui();
         // TODO: remove in final release
         if is_key_down(KeyCode::Tab) {
             self.draw_hit_boxes();
         }
     }
-  
+
     fn draw_map(&self) {
         let texture = &self.assets.map;
-        let draw_param = DrawTextureParams{
-            dest_size: Some(vec2(texture.width()/PIXELS_PER_UNIT, texture.height()/PIXELS_PER_UNIT)),
+        let draw_param = DrawTextureParams {
+            dest_size: Some(vec2(
+                texture.width() / PIXELS_PER_UNIT,
+                texture.height() / PIXELS_PER_UNIT,
+            )),
             flip_y: true,
             ..DrawTextureParams::default()
         };
@@ -169,27 +173,36 @@ impl App {
 
     fn draw_ui(&self) {
         set_default_camera();
-        
+
         self.draw_generator_ui();
         self.draw_repair_kit_ui();
-        
-        let colour;
-        if self.lightnings.len() >= 1 {
-            let index = self.lightnings.len()-1;
-            let mut a = self.lightnings[index].max_duration()*self.lightnings[index].current_duration();
+
+        let colour= if self.lightnings.len() >= 1 {
+            let index = self.lightnings.len() - 1;
+            let mut a =
+                self.lightnings[index].max_duration() * self.lightnings[index].current_duration();
             if a > 0.5 {
                 a = 0.5
             }
-            colour = Color::new(0.0, 0.0, 0.0, a);
-        }
-        else {
-            colour = Color::new(0.0, 0.0, 0.0, 0.5);
-        }
+            Color::new(0.0, 0.0, 0.1, a)
+        } else {
+            Color::new(0.0, 0.0, 0.1, 0.5)
+        };
         draw_rectangle(0.0, 0.0, screen_width(), screen_width(), colour);
         set_camera(&self.camera);
     }
 
     fn update(&mut self, delta: f32) {
+
+        // TODO: remove in final release
+        if is_key_pressed(KeyCode::Z) {
+            self.game = Game::load();
+        }
+        // TODO: remove in final release
+        if is_key_pressed(KeyCode::X) {
+            println!("x: {}, y: {}", self.game.player().hit_box().x,self.game.player().hit_box().y);            
+        }
+
         self.lightning_timer.update(delta);
         self.player_key_input();
         self.update_animations(delta);
@@ -197,13 +210,15 @@ impl App {
 
         self.update_lighnings(delta);
 
-        let player_center = vec2(self.game.player().hit_box().x+self.game.player().hit_box().w/2.0, self.game.player().hit_box().y+self.game.player().hit_box().h/2.0,);
+        let player_center = vec2(
+            self.game.player().hit_box().x + self.game.player().hit_box().w / 2.0,
+            self.game.player().hit_box().y + self.game.player().hit_box().h / 2.0,
+        );
 
-        self.camera.offset = -player_center*self.camera.zoom;
+        self.camera.offset = -player_center * self.camera.zoom;
         self.lock_camera();
 
         self.lightning_timer.reset();
-
     }
 
     fn update_animations(&mut self, delta: f32) {
@@ -211,24 +226,25 @@ impl App {
     }
 
     fn update_lighnings(&mut self, delta: f32) {
-        
         let mut i = 0;
 
         if self.lightning_timer.is_active() {
-            self.lightnings.push( App::new_lightning(&self.assets.lightning_sound, vec2(0.0, 0.0), 1.0));
+            self.lightnings.push(App::new_lightning(
+                &self.assets.lightning_sound,
+                vec2(0.0, 0.0),
+                1.0,
+            ));
         }
 
         while i < self.lightnings.len() {
             self.lightnings[i].update(delta);
             if self.lightnings[i].current_duration() >= self.lightnings[i].max_duration() {
                 self.lightnings.remove(i as usize);
-                continue
+                continue;
             }
             i += 1
         }
-
     }
-
 
     fn player_key_input(&mut self) {
         let mut vel = vec2(0.0, 0.0);
@@ -239,8 +255,12 @@ impl App {
                 *self.game.number_of_repair_kits_mut() -= 1;
             }
 
-            let pos = vec2(self.game.player().hit_box().x, self.game.player().hit_box().y);
-            self.lightnings.push(App::new_lightning(&self.assets.lightning_sound, pos, 1.0));
+            let pos = vec2(
+                self.game.player().hit_box().x,
+                self.game.player().hit_box().y,
+            );
+            self.lightnings
+                .push(App::new_lightning(&self.assets.lightning_sound, pos, 1.0));
         }
 
         if is_key_down(KeyCode::LeftShift) {
@@ -272,7 +292,10 @@ impl App {
         let texture = &self.assets.player_animation[self.player_am.frame_index];
 
         let draw_param = DrawTextureParams {
-            dest_size: Some(vec2(texture.width() / PIXELS_PER_UNIT, texture.height() / PIXELS_PER_UNIT)),
+            dest_size: Some(vec2(
+                texture.width() / PIXELS_PER_UNIT,
+                texture.height() / PIXELS_PER_UNIT,
+            )),
             flip_x: self.player_facing_left,
             flip_y: true,
             ..DrawTextureParams::default()
@@ -280,17 +303,6 @@ impl App {
 
         let hit_box = player.hit_box();
         draw_texture_ex(*texture, hit_box.x, hit_box.y, WHITE, draw_param);
-    }
-
-    fn draw_building(&self, building: &Building) {
-        let hit_box = building.hit_box();
-        draw_rectangle(hit_box.x, hit_box.y, hit_box.w, hit_box.h, RED);
-    }
-
-    fn draw_buildings(&self) {
-        for building in self.game.buildings() {
-            self.draw_building(building);
-        }
     }
 
     fn draw_electical_box(&self, electrical_box: &ElectricalBox) {
@@ -301,7 +313,10 @@ impl App {
         };
 
         let draw_param = DrawTextureParams {
-            dest_size: Some(vec2(texture.width() / PIXELS_PER_UNIT, texture.height() / PIXELS_PER_UNIT)),
+            dest_size: Some(vec2(
+                texture.width() / PIXELS_PER_UNIT,
+                texture.height() / PIXELS_PER_UNIT,
+            )),
             flip_y: true,
             ..DrawTextureParams::default()
         };
@@ -320,17 +335,23 @@ impl App {
         let len = lightning.points().len();
 
         for (i, point) in lightning.points().iter().enumerate() {
-            if i+1 == len {
+            if i + 1 == len {
                 break;
             }
             let bottom_point = point;
-            let top_point = lightning.points()[i+1];
+            let top_point = lightning.points()[i + 1];
 
             draw_circle(lightning.points()[i].x, lightning.points()[i].y, 0.05, BLUE);
 
-            draw_line(bottom_point.x, bottom_point.y, top_point.x, top_point.y, 0.1, BLUE);
+            draw_line(
+                bottom_point.x,
+                bottom_point.y,
+                top_point.x,
+                top_point.y,
+                0.1,
+                BLUE,
+            );
         }
-
     }
 
     fn draw_lightnings(&self) {
@@ -342,7 +363,10 @@ impl App {
     fn draw_puddle(&self, puddle: &Puddle) {
         let texture = &self.assets.puddle;
         let draw_param = DrawTextureParams {
-            dest_size: Some(vec2(texture.width() / PIXELS_PER_UNIT, texture.height() / PIXELS_PER_UNIT)),
+            dest_size: Some(vec2(
+                texture.width() / PIXELS_PER_UNIT,
+                texture.height() / PIXELS_PER_UNIT,
+            )),
             flip_y: true,
             ..DrawTextureParams::default()
         };
@@ -351,22 +375,19 @@ impl App {
         draw_texture_ex(*texture, hit_box.x, hit_box.y, WHITE, draw_param);
     }
 
-    fn draw_puddles(&self){
+    fn draw_puddles(&self) {
         for puddle in self.game.puddles() {
             self.draw_puddle(puddle);
         }
     }
 
     fn draw_generator_ui(&self) {
-
         draw_rectangle(10., 10., 110., 20., DARKGRAY);
         draw_rectangle(15., 15., 100. * self.game.generator().feul(), 10., YELLOW);
-
     }
 
     fn draw_repair_kit_ui(&self) {
-
-        let width = (*self.game.max_number_of_repair_kits() as f32 + 1.0)*25.0+5.0;
+        let width = (*self.game.max_number_of_repair_kits() as f32 + 1.0) * 25.0 + 5.0;
         draw_rectangle(10., 40., width, 20., DARKGRAY);
 
         for i in 1..=*self.game.number_of_repair_kits() {
@@ -376,21 +397,20 @@ impl App {
         draw_texture(self.assets.repair_kit, 15.0, 45.0, WHITE)
     }
 
-
     fn draw_hit_box<T: HitBox>(&self, object: &T) {
         let hit_box = object.hit_box();
         draw_rectangle_lines(hit_box.x, hit_box.y, hit_box.w, hit_box.h, 0.1, WHITE);
     }
-    
+
     fn draw_hit_box_electrical_boxes(&self) {
         for electrical_box in self.game.electrical_boxes() {
             self.draw_hit_box(electrical_box);
         }
     }
-    
-    fn draw_hit_box_buildings(&self) {
-        for building in self.game.buildings() {
-            self.draw_hit_box(building);
+
+    fn draw_hit_box_walls(&self) {
+        for wall in self.game.walls() {
+            self.draw_hit_box(wall);
         }
     }
 
@@ -405,17 +425,17 @@ impl App {
     }
 
     fn draw_hit_boxes(&self) {
-        self.draw_hit_box_buildings();
+        self.draw_hit_box_walls();
         self.draw_hit_box_electrical_boxes();
         self.draw_hit_box_puddles();
         self.draw_hit_box_player();
     }
 
-    fn new_lightning(sound: &Sound, origin: Vec2, max_duration : f32) -> Lightning {
+    fn new_lightning(sound: &Sound, origin: Vec2, max_duration: f32) -> Lightning {
         let sound_params = PlaySoundParams {
             ..PlaySoundParams::default()
         };
-    
+
         play_sound(*sound, sound_params);
 
         let lightning = Lightning::new(origin, max_duration);
@@ -423,7 +443,6 @@ impl App {
     }
 
     fn lock_camera(&mut self) {
-
         let screen_x = self.camera.screen_to_world(vec2(0.0, 0.0)).x;
         let screen_y = self.camera.screen_to_world(vec2(0.0, screen_height())).y;
 
@@ -436,15 +455,15 @@ impl App {
 
         let screen_x = self.camera.screen_to_world(vec2(screen_width(), 0.0)).x;
         let screen_y = self.camera.screen_to_world(vec2(0.0, 0.0)).y;
-        
-        let width = 1600.0/PIXELS_PER_UNIT;
-        let height = 800.0/PIXELS_PER_UNIT;
+
+        let width = 1600.0 / PIXELS_PER_UNIT;
+        let height = 800.0 / PIXELS_PER_UNIT;
 
         if screen_x > width {
-            self.camera.offset.x = -width*self.camera.zoom.x + 1.0;
+            self.camera.offset.x = -width * self.camera.zoom.x + 1.0;
         }
         if screen_y > height {
-            self.camera.offset.y = -height*self.camera.zoom.y + 1.0;
+            self.camera.offset.y = -height * self.camera.zoom.y + 1.0;
         }
     }
 }
@@ -453,9 +472,7 @@ impl App {
 async fn main() {
     let mut app = App::new().await;
 
-    
     loop {
-
         // TODO: remove in final release
         if is_key_pressed(KeyCode::Escape) {
             break;
@@ -466,6 +483,4 @@ async fn main() {
 
         next_frame().await
     }
-
-
 }

@@ -3,7 +3,7 @@ use macroquad::math::Rect;
 use super::HitBox;
 
 pub struct Puddle {
-    hit_box: Rect
+    hit_box: Rect,
 }
 impl Puddle {
     pub fn new(hit_box: Rect) -> Self {

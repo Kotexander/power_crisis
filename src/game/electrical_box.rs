@@ -16,7 +16,6 @@ impl ElectricalBox {
     pub fn broken(&self) -> &bool {
         &self.broken
     }
-
 }
 
 impl HitBox for ElectricalBox {

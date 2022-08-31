@@ -4,8 +4,8 @@ pub use generator::*;
 mod player;
 pub use player::*;
 
-mod building;
-pub use building::*;
+mod wall;
+pub use wall::*;
 
 mod electrical_box;
 pub use electrical_box::*;
@@ -13,7 +13,7 @@ pub use electrical_box::*;
 mod puddle;
 pub use puddle::*;
 
-use macroquad::math::{Vec2, vec2, Rect};
+use macroquad::math::{vec2, Rect, Vec2};
 
 use crate::PIXELS_PER_UNIT;
 
@@ -25,7 +25,7 @@ pub struct Game {
     generator: Generator,
     player: Player,
 
-    buildings: Vec<Building>,
+    walls: Vec<Wall>,
 
     number_of_repair_kits: u32,
     max_number_of_repair_kits: u32,
@@ -40,15 +40,24 @@ pub struct Game {
 impl Game {
     pub fn new() -> Self {
         let generator = Generator::new(1.0, 0.1, true);
-        let player = Player::new(Rect::new(0.0, 0.0, 6.0 / PIXELS_PER_UNIT, 6.0/PIXELS_PER_UNIT));
+        let player = Player::new(Rect::new(
+            0.0,
+            0.0,
+            6.0 / PIXELS_PER_UNIT,
+            6.0 / PIXELS_PER_UNIT,
+        ));
 
-        let buildings = vec![Building::new(Rect::new(-1.0, -1.0, 2.0, 2.0))];
+        let walls = vec![Wall::new(Rect::new(-1.0, -1.0, 2.0, 2.0))];
 
-        let electrical_boxes = vec![ElectricalBox::new(Rect::new(-1.0, 3.0, 10.0 / PIXELS_PER_UNIT, 16.0 / PIXELS_PER_UNIT))];
+        let electrical_boxes = vec![ElectricalBox::new(Rect::new(
+            -1.0,
+            3.0,
+            10.0 / PIXELS_PER_UNIT,
+            16.0 / PIXELS_PER_UNIT,
+        ))];
 
         let max_number_of_repair_kits = 5;
         let number_of_repair_kits = max_number_of_repair_kits;
-
 
         let puddles = vec![Puddle::new(Rect::new(3.0, 3.0, 1.0, 1.0))];
 
@@ -58,13 +67,66 @@ impl Game {
         Self {
             generator,
             player,
-            buildings,
+            walls,
             number_of_repair_kits,
             max_number_of_repair_kits,
             electrical_boxes,
             puddles,
             map_width,
-            map_height
+            map_height,
+        }
+    }
+
+    pub fn load() -> Self {
+        use serde_json::Value;
+        let map: serde_json::Value =
+            serde_json::from_reader(std::fs::File::open("map.json").unwrap()).unwrap();
+
+        let generator = Generator::new(1.0, 0.1, true);
+
+        let player = &map["player"];
+        let player = Player::new(Rect::new(
+            player["x"].as_f64().unwrap() as f32,
+            player["y"].as_f64().unwrap() as f32,
+            6.0 / PIXELS_PER_UNIT,
+            6.0 / PIXELS_PER_UNIT,
+        ));
+
+        let mut walls = vec![];
+        for wall in map["walls"].as_array().unwrap() {
+            walls.push(Wall::new(Rect::new(
+                wall["x"].as_f64().unwrap() as f32,
+                wall["y"].as_f64().unwrap() as f32,
+                wall["w"].as_f64().unwrap() as f32,
+                wall["h"].as_f64().unwrap() as f32,
+            )));
+        }
+
+        let electrical_boxes = vec![ElectricalBox::new(Rect::new(
+            -1.0,
+            3.0,
+            10.0 / PIXELS_PER_UNIT,
+            16.0 / PIXELS_PER_UNIT,
+        ))];
+
+        let puddles = vec![Puddle::new(Rect::new(3.0, 3.0, 1.0, 1.0))];
+
+        let max_number_of_repair_kits = 5;
+        let number_of_repair_kits = max_number_of_repair_kits;
+
+        let map_width = 1600.0 / PIXELS_PER_UNIT;
+        let map_height = 800.0 / PIXELS_PER_UNIT;
+
+        Self {
+            generator,
+            player,
+            walls,
+            max_number_of_repair_kits,
+            number_of_repair_kits,
+            electrical_boxes,
+            puddles,
+            map_width,
+            map_height,
         }
     }
 
@@ -75,15 +137,17 @@ impl Game {
         self.player_collisions();
     }
 
-    fn player_collisions(&mut self ) {
-        for i in 0..self.buildings().len() {
-            if let Some(v) = aabb_collision(self.player.hit_box(), self.buildings()[i].hit_box()) {
+    fn player_collisions(&mut self) {
+        for i in 0..self.walls().len() {
+            if let Some(v) = aabb_collision(self.player.hit_box(), self.walls()[i].hit_box()) {
                 self.player.hit_box_mut().move_to(v);
             }
         }
 
         for i in 0..self.electrical_boxes().len() {
-            if let Some(v) = aabb_collision(self.player.hit_box(), self.electrical_boxes()[i].hit_box()) {
+            if let Some(v) =
+                aabb_collision(self.player.hit_box(), self.electrical_boxes()[i].hit_box())
+            {
                 self.player.hit_box_mut().move_to(v);
             }
         }
@@ -127,9 +191,9 @@ impl Game {
         &mut self.player
     }
 
-    /// Get a reference to the game's buildings.
-    pub fn buildings(&self) -> &[Building] {
-        self.buildings.as_ref()
+    /// Get a reference to the game's walls.
+    pub fn walls(&self) -> &[Wall] {
+        self.walls.as_ref()
     }
 
     /// Get a reference to the game's number of repair kits.
@@ -187,22 +251,19 @@ fn aabb_collision(first: &Rect, other: &Rect) -> Option<Vec2> {
 
     let bottom_in = other.top() - first.bottom();
     let top_in = first.top() - other.bottom();
-    
+
     let left_in = other.left() - first.right();
     let right_in = first.left() - other.right();
 
-
-    if bottom_in < top_in && bottom_in < left_in && bottom_in < right_in{
+    if bottom_in > top_in && bottom_in > left_in && bottom_in > right_in {
+        return Some(vec2(first.x, other.top() - first.h));
+    } else if top_in > left_in && top_in > right_in {
         return Some(vec2(first.x, other.bottom()));
     }
-    else if top_in < left_in && top_in < right_in {
-        return Some(vec2(first.x, other.top() - first.h));
-    }
-    if left_in < right_in {
-        return Some(vec2(other.right(), first.y));
-    }
-    else {
+    if left_in > right_in {
         return Some(vec2(other.left() - first.w, first.y));
+    } else {
+        return Some(vec2(other.right(), first.y));
     }
 }
 

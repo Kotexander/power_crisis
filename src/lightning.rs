@@ -1,5 +1,5 @@
 use macroquad::math::{vec2, Vec2};
-use macroquad::rand::{gen_range};
+use macroquad::rand::gen_range;
 
 pub struct Lightning {
     origin: Vec2,
@@ -30,7 +30,6 @@ impl Lightning {
     }
 
     pub fn gen_lightning_points(origin: Vec2) -> Vec<Vec2> {
-
         let mut bottom_point = origin;
         let mut top_point = origin;
 
