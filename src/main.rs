@@ -49,6 +49,7 @@ struct Assets {
     electrical_box: Texture2D,
     electrical_box_broken: Texture2D,
     repair_kit: Texture2D,
+    generator: Texture2D,
     puddle: Texture2D,
     map: Texture2D,
     lightning_sound: Sound,
@@ -76,6 +77,9 @@ impl Assets {
         let repair_kit = load_texture("assets/repair_kit.png").await.unwrap();
         repair_kit.set_filter(FilterMode::Nearest);
 
+        let generator = load_texture("assets/generator.png").await.unwrap();
+        generator.set_filter(FilterMode::Nearest);
+
         let puddle = load_texture("assets/puddle.png").await.unwrap();
         puddle.set_filter(FilterMode::Nearest);
 
@@ -90,6 +94,7 @@ impl Assets {
             electrical_box,
             electrical_box_broken,
             repair_kit,
+            generator,
             puddle,
             map,
 
@@ -421,8 +426,9 @@ impl App {
     }
 
     fn draw_generator_ui(&self) {
-        draw_rectangle(10., 10., 110., 20., DARKGRAY);
-        draw_rectangle(15., 15., 100. * self.game.generator().feul(), 10., YELLOW);
+        draw_rectangle(10., 10., 145., 20., DARKGRAY);
+        draw_rectangle(30., 15., 120. * self.game.generator().feul(), 10., YELLOW);
+        draw_texture(self.assets.generator, 12.5, 12.5, WHITE);
     }
 
     fn draw_repair_kit_ui(&self) {
