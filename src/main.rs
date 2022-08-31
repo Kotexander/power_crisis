@@ -1,6 +1,7 @@
 use macroquad::{
     audio::{load_sound, play_sound, PlaySoundParams, Sound},
     prelude::*,
+    rand::{gen_range}
 };
 
 mod game;
@@ -14,6 +15,35 @@ use timer::*;
 
 pub const PIXELS_PER_UNIT: f32 = 16.0;
 
+struct FootstepManager{
+    distance_traveled: f32,
+    distance_until_sound: f32,
+}
+impl FootstepManager {
+    fn new(distance_until_sound: f32) -> Self {
+        let distance_traveled = 0.0;
+        Self {
+            distance_traveled,
+            distance_until_sound,
+        }
+    }
+
+    fn update(&mut self, distance: f32) {
+        self.distance_traveled += distance.abs();
+    }
+
+    fn try_sound(&mut self, sound: &Sound) {
+        if self.distance_traveled >= self.distance_until_sound {
+            self.distance_traveled = 0.0;
+            
+            let sound_param = PlaySoundParams {
+                ..PlaySoundParams::default()
+            };
+            play_sound(*sound, sound_param);
+        }
+    }
+}
+
 struct Assets {
     player_animation: Vec<Texture2D>,
     electrical_box: Texture2D,
@@ -22,6 +52,7 @@ struct Assets {
     puddle: Texture2D,
     map: Texture2D,
     lightning_sound: Sound,
+    walk_sound: Sound,
 }
 impl Assets {
     async fn load() -> Self {
@@ -52,6 +83,7 @@ impl Assets {
         map.set_filter(FilterMode::Nearest);
 
         let lightning_sound = load_sound("assets/lightning.wav").await.unwrap();
+        let walk_sound = load_sound("assets/walk.wav").await.unwrap();
 
         Self {
             player_animation,
@@ -62,6 +94,7 @@ impl Assets {
             map,
 
             lightning_sound,
+            walk_sound,
         }
     }
 }
@@ -102,6 +135,7 @@ struct App {
     assets: Assets,
     player_facing_left: bool,
     player_am: AnimationManager,
+    player_fm: FootstepManager,
     lightnings: Vec<Lightning>,
     lightning_timer: Timer,
 }
@@ -122,13 +156,11 @@ impl App {
 
         let player_am = AnimationManager::new(1.0, &assets.player_animation);
 
-        let lightnings = vec![App::new_lightning(
-            &assets.lightning_sound,
-            vec2(1.0, 1.0),
-            1.0,
-        )];
+        let lightnings = Vec::new();
 
-        let lightning_timer = Timer::new(5.0, 10.0);
+        let lightning_timer = Timer::new(3.0, 6.0);
+
+        let player_fm = FootstepManager::new(2.0);
 
         Self {
             game,
@@ -136,6 +168,7 @@ impl App {
             assets,
             player_facing_left,
             player_am,
+            player_fm,
             lightnings,
             lightning_timer,
         }
@@ -229,9 +262,11 @@ impl App {
         let mut i = 0;
 
         if self.lightning_timer.is_active() {
+            let x = gen_range(0.0, 1600.0/PIXELS_PER_UNIT);
+            let y = gen_range(0.0, 800.0/PIXELS_PER_UNIT);
             self.lightnings.push(App::new_lightning(
                 &self.assets.lightning_sound,
-                vec2(0.0, 0.0),
+                vec2(x, y),
                 1.0,
             ));
         }
@@ -281,9 +316,13 @@ impl App {
         if is_key_down(KeyCode::S) {
             vel.y -= 1.0;
         }
-        self.game
-            .player_mut()
-            .add_velocity(vel.normalize_or_zero() * speed);
+
+        let amount = vel.normalize_or_zero() * speed;
+        self.game.player_mut().add_velocity(amount);
+
+
+        self.player_fm.update(amount.length()/PIXELS_PER_UNIT);
+        self.player_fm.try_sound(&self.assets.walk_sound);
     }
 
     fn draw_player(&self) {
