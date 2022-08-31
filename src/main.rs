@@ -1,7 +1,7 @@
 use macroquad::{
     audio::{load_sound, play_sound, PlaySoundParams, Sound},
     prelude::*,
-    rand::{gen_range}
+    rand::gen_range,
 };
 
 mod game;
@@ -15,7 +15,7 @@ use timer::*;
 
 pub const PIXELS_PER_UNIT: f32 = 16.0;
 
-struct FootstepManager{
+struct FootstepManager {
     distance_traveled: f32,
     distance_until_sound: f32,
 }
@@ -35,7 +35,7 @@ impl FootstepManager {
     fn try_sound(&mut self, sound: &Sound) {
         if self.distance_traveled >= self.distance_until_sound {
             self.distance_traveled = 0.0;
-            
+
             let sound_param = PlaySoundParams {
                 ..PlaySoundParams::default()
             };
@@ -163,7 +163,7 @@ impl App {
 
         let lightnings = Vec::new();
 
-        let lightning_timer = Timer::new(3.0, 6.0);
+        let lightning_timer = Timer::new(0.1, 1.0);
 
         let player_fm = FootstepManager::new(2.0);
 
@@ -215,7 +215,7 @@ impl App {
         self.draw_generator_ui();
         self.draw_repair_kit_ui();
 
-        let colour= if self.lightnings.len() >= 1 {
+        let colour = if self.lightnings.len() >= 1 {
             let index = self.lightnings.len() - 1;
             let mut a =
                 self.lightnings[index].max_duration() * self.lightnings[index].current_duration();
@@ -231,14 +231,17 @@ impl App {
     }
 
     fn update(&mut self, delta: f32) {
-
         // TODO: remove in final release
         if is_key_pressed(KeyCode::Z) {
             self.game = Game::load();
         }
         // TODO: remove in final release
         if is_key_pressed(KeyCode::X) {
-            println!("x: {}, y: {}", self.game.player().hit_box().x,self.game.player().hit_box().y);            
+            println!(
+                "x: {}, y: {}",
+                self.game.player().hit_box().x,
+                self.game.player().hit_box().y
+            );
         }
 
         self.lightning_timer.update(delta);
@@ -267,8 +270,8 @@ impl App {
         let mut i = 0;
 
         if self.lightning_timer.is_active() {
-            let x = gen_range(0.0, 1600.0/PIXELS_PER_UNIT);
-            let y = gen_range(0.0, 800.0/PIXELS_PER_UNIT);
+            let x = gen_range(0.0, 1600.0 / PIXELS_PER_UNIT);
+            let y = gen_range(0.0, 800.0 / PIXELS_PER_UNIT);
             self.lightnings.push(App::new_lightning(
                 &self.assets.lightning_sound,
                 vec2(x, y),
@@ -325,8 +328,7 @@ impl App {
         let amount = vel.normalize_or_zero() * speed;
         self.game.player_mut().add_velocity(amount);
 
-
-        self.player_fm.update(amount.length()/PIXELS_PER_UNIT);
+        self.player_fm.update(amount.length() / PIXELS_PER_UNIT);
         self.player_fm.try_sound(&self.assets.walk_sound);
     }
 
