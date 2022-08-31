@@ -6,6 +6,9 @@ use game::*;
 mod lightning;
 use lightning::*;
 
+mod timer;
+use timer::*;
+
 pub const PIXELS_PER_UNIT: f32 = 16.0;
 
 struct Assets {
@@ -101,7 +104,8 @@ struct App {
     assets: Assets,
     player_facing_left: bool,
     player_am: AnimationManager,
-    lightning: Lightning,
+    lightnings: Vec<Lightning>,
+    lightning_timer: Timer,
 }
 impl App {
     async fn new() -> Self {
@@ -120,7 +124,9 @@ impl App {
 
         let player_am = AnimationManager::new(1.0, &assets.player_animation);
 
-        let lightning = App::new_lightning(&assets.lightning_sound, vec2(1.0, 1.0), 0.012);
+        let lightnings = vec![App::new_lightning(&assets.lightning_sound, vec2(1.0, 1.0), 1.0)];
+
+        let lightning_timer = Timer::new(5.0, 10.0);
 
         Self {
             game,
@@ -128,7 +134,8 @@ impl App {
             assets,
             player_facing_left,
             player_am,
-            lightning,
+            lightnings,
+            lightning_timer,
         }
     }
 
@@ -141,9 +148,9 @@ impl App {
         self.draw_buildings();
         self.draw_puddles();
         self.draw_player();
-        self.draw_lightning();
-        self.draw_ui();
+        self.draw_lightnings();
         
+        self.draw_ui();
         // TODO: remove in final release
         if is_key_down(KeyCode::Tab) {
             self.draw_hit_boxes();
@@ -162,29 +169,66 @@ impl App {
 
     fn draw_ui(&self) {
         set_default_camera();
-
+        
         self.draw_generator_ui();
         self.draw_repair_kit_ui();
-
+        
+        let colour;
+        if self.lightnings.len() >= 1 {
+            let index = self.lightnings.len()-1;
+            let mut a = self.lightnings[index].max_duration()*self.lightnings[index].current_duration();
+            if a > 0.5 {
+                a = 0.5
+            }
+            colour = Color::new(0.0, 0.0, 0.0, a);
+        }
+        else {
+            colour = Color::new(0.0, 0.0, 0.0, 0.5);
+        }
+        draw_rectangle(0.0, 0.0, screen_width(), screen_width(), colour);
         set_camera(&self.camera);
     }
 
     fn update(&mut self, delta: f32) {
+        self.lightning_timer.update(delta);
         self.player_key_input();
         self.update_animations(delta);
         self.game.update(delta);
-        self.lightning.update(delta);
+
+        self.update_lighnings(delta);
 
         let player_center = vec2(self.game.player().hit_box().x+self.game.player().hit_box().w/2.0, self.game.player().hit_box().y+self.game.player().hit_box().h/2.0,);
 
         self.camera.offset = -player_center*self.camera.zoom;
         self.lock_camera();
 
+        self.lightning_timer.reset();
+
     }
 
     fn update_animations(&mut self, delta: f32) {
         self.player_am.update(delta);
     }
+
+    fn update_lighnings(&mut self, delta: f32) {
+        
+        let mut i = 0;
+
+        if self.lightning_timer.is_active() {
+            self.lightnings.push( App::new_lightning(&self.assets.lightning_sound, vec2(0.0, 0.0), 1.0));
+        }
+
+        while i < self.lightnings.len() {
+            self.lightnings[i].update(delta);
+            if self.lightnings[i].current_duration() >= self.lightnings[i].max_duration() {
+                self.lightnings.remove(i as usize);
+                continue
+            }
+            i += 1
+        }
+
+    }
+
 
     fn player_key_input(&mut self) {
         let mut vel = vec2(0.0, 0.0);
@@ -194,6 +238,9 @@ impl App {
             if *self.game.number_of_repair_kits() > 0 {
                 *self.game.number_of_repair_kits_mut() -= 1;
             }
+
+            let pos = vec2(self.game.player().hit_box().x, self.game.player().hit_box().y);
+            self.lightnings.push(App::new_lightning(&self.assets.lightning_sound, pos, 1.0));
         }
 
         if is_key_down(KeyCode::LeftShift) {
@@ -269,21 +316,27 @@ impl App {
         }
     }
 
-    fn draw_lightning(&self) {
-        let len = self.lightning.points().len();
+    fn draw_lightning(&self, lightning: &Lightning) {
+        let len = lightning.points().len();
 
-        for (i, point) in self.lightning.points().iter().enumerate() {
+        for (i, point) in lightning.points().iter().enumerate() {
             if i+1 == len {
                 break;
             }
             let bottom_point = point;
-            let top_point = self.lightning.points()[i+1];
+            let top_point = lightning.points()[i+1];
 
-            draw_circle(self.lightning.points()[i].x, self.lightning.points()[i].y, 0.05, BLUE);
+            draw_circle(lightning.points()[i].x, lightning.points()[i].y, 0.05, BLUE);
 
             draw_line(bottom_point.x, bottom_point.y, top_point.x, top_point.y, 0.1, BLUE);
         }
 
+    }
+
+    fn draw_lightnings(&self) {
+        for lightning in self.lightnings.iter() {
+            self.draw_lightning(&lightning)
+        }
     }
 
     fn draw_puddle(&self, puddle: &Puddle) {
