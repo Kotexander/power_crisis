@@ -1,3 +1,4 @@
+
 mod generator;
 pub use generator::*;
 
@@ -13,7 +14,13 @@ pub use electrical_box::*;
 mod puddle;
 pub use puddle::*;
 
-use macroquad::math::{vec2, Rect, Vec2};
+mod random_timer;
+pub use random_timer::*;
+
+use macroquad::{
+    math::{vec2, Rect, Vec2},
+    rand::{gen_range, RandomRange},
+};
 
 use crate::PIXELS_PER_UNIT;
 
@@ -32,55 +39,17 @@ pub struct Game {
     electrical_boxes: Vec<ElectricalBox>,
 
     puddles: Vec<Puddle>,
+    puddle_timer: RandomTimer,
 
     map_width: f32,
     map_height: f32,
 }
 
 impl Game {
-    pub fn new() -> Self {
-        let generator = Generator::new(1.0, 0.1, true);
-        let player = Player::new(Rect::new(
-            0.0,
-            0.0,
-            6.0 / PIXELS_PER_UNIT,
-            6.0 / PIXELS_PER_UNIT,
-        ));
-
-        let walls = vec![Wall::new(Rect::new(-1.0, -1.0, 2.0, 2.0))];
-
-        let electrical_boxes = vec![ElectricalBox::new(Rect::new(
-            -1.0,
-            3.0,
-            10.0 / PIXELS_PER_UNIT,
-            16.0 / PIXELS_PER_UNIT,
-        ))];
-
-        let max_number_of_repair_kits = 5;
-        let number_of_repair_kits = max_number_of_repair_kits;
-
-        let puddles = vec![Puddle::new(Rect::new(3.0, 3.0, 1.0, 1.0))];
-
-        let map_width = 1600.0 / PIXELS_PER_UNIT;
-        let map_height = 800.0 / PIXELS_PER_UNIT;
-
-        Self {
-            generator,
-            player,
-            walls,
-            number_of_repair_kits,
-            max_number_of_repair_kits,
-            electrical_boxes,
-            puddles,
-            map_width,
-            map_height,
-        }
-    }
-
     pub fn load() -> Self {
-        use serde_json::Value;
         let map: serde_json::Value =
-            serde_json::from_reader(std::fs::File::open("map.json").unwrap()).unwrap();
+            // serde_json::from_reader(std::fs::File::open("map.json").unwrap()).unwrap();
+            serde_json::from_slice(include_bytes!("../map.json")).unwrap();
 
         let generator = Generator::new(1.0, 0.1, true);
 
@@ -109,7 +78,8 @@ impl Game {
             16.0 / PIXELS_PER_UNIT,
         ))];
 
-        let puddles = vec![Puddle::new(Rect::new(3.0, 3.0, 1.0, 1.0))];
+        let puddles = vec![];
+        let puddle_timer = RandomTimer::new(0.1, 1.0);
 
         let max_number_of_repair_kits = 5;
         let number_of_repair_kits = max_number_of_repair_kits;
@@ -125,16 +95,49 @@ impl Game {
             number_of_repair_kits,
             electrical_boxes,
             puddles,
+            puddle_timer,
             map_width,
             map_height,
         }
     }
 
     pub fn update(&mut self, delta: f32) {
+        self.puddle_timer.update(delta);
+
         self.generator.update(delta);
+        self.update_puddles(delta);
         self.player.update_pos(self.which_drag(), delta);
         self.map_collisions();
         self.player_collisions();
+
+    }
+
+    fn update_puddles(&mut self, delta: f32) {
+        if self.puddle_timer.is_active() {
+            self.spawn_puddle();
+            self.puddle_timer.reset()
+        }
+        for puddle in &mut self.puddles {
+            puddle.update(delta);
+        }
+
+        let mut i = 0;
+        while i < self.puddles.len() {
+            if self.puddles[i].time_left() <= 0.0 {
+                self.puddles.remove(i);
+            }
+            else {
+                i += 1;
+            }
+        }
+
+        // self.puddles.drain_filter(|p| {
+            // if p.time_left() >= 0.0 {
+                // return true;
+            // }
+            // false
+        // });
+        
     }
 
     fn player_collisions(&mut self) {
@@ -176,6 +179,23 @@ impl Game {
         }
     }
 
+    fn spawn_puddle(&mut self) {
+        let mut hit_box = Rect::new(
+            gen_range(0.0, self.map_width - 1.0),
+            gen_range(0.0, self.map_height - 1.0),
+            1.0,
+            1.0,
+        );
+
+        for wall in &self.walls {
+            if let Some(v) = aabb_collision(&hit_box, &wall.hit_box()) {
+                hit_box.move_to(v);
+            }
+        }
+        
+        self.puddles.push(Puddle::new(hit_box, 60.0, gen_range(0.0, std::f32::consts::TAU)));
+    }
+
     /// Get a reference to the game's generator.
     pub fn generator(&self) -> &Generator {
         &self.generator
@@ -206,7 +226,7 @@ impl Game {
         &mut self.number_of_repair_kits
     }
 
-    /// Get a reference to the game's max number of repair kits.
+    /// Get a reference to  the game's max number of repair kits.
     pub fn max_number_of_repair_kits(&self) -> &u32 {
         &self.max_number_of_repair_kits
     }

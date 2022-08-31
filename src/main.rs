@@ -10,9 +10,6 @@ use game::*;
 mod lightning;
 use lightning::*;
 
-mod timer;
-use timer::*;
-
 pub const PIXELS_PER_UNIT: f32 = 16.0;
 
 struct FootstepManager {
@@ -142,7 +139,7 @@ struct App {
     player_am: AnimationManager,
     player_fm: FootstepManager,
     lightnings: Vec<Lightning>,
-    lightning_timer: Timer,
+    lightning_timer: RandomTimer,
 }
 impl App {
     async fn new() -> Self {
@@ -163,7 +160,7 @@ impl App {
 
         let lightnings = Vec::new();
 
-        let lightning_timer = Timer::new(0.1, 1.0);
+        let lightning_timer = RandomTimer::new(0.1, 1.0);
 
         let player_fm = FootstepManager::new(2.0);
 
@@ -259,7 +256,9 @@ impl App {
         self.camera.offset = -player_center * self.camera.zoom;
         self.lock_camera();
 
-        self.lightning_timer.reset();
+        if self.lightning_timer.is_active() {
+            self.lightning_timer.reset();
+        }
     }
 
     fn update_animations(&mut self, delta: f32) {
@@ -414,6 +413,7 @@ impl App {
                 texture.height() / PIXELS_PER_UNIT,
             )),
             flip_y: true,
+            rotation: puddle.rotation,
             ..DrawTextureParams::default()
         };
 
