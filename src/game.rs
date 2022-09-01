@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 
 mod generator;
 pub use generator::*;
@@ -16,6 +17,11 @@ pub use puddle::*;
 
 mod random_timer;
 pub use random_timer::*;
+
+pub enum GameEvent {
+    FixEBox(ElectricalBox),
+    DestroyEBox(ElectricalBox)
+}
 
 use macroquad::{
     math::{vec2, Rect, Vec2},
@@ -36,20 +42,24 @@ pub struct Game {
 
     number_of_repair_kits: u32,
     max_number_of_repair_kits: u32,
+
     electrical_boxes: Vec<ElectricalBox>,
+    break_timer: RandomTimer,
 
     puddles: Vec<Puddle>,
     puddle_timer: RandomTimer,
 
     map_width: f32,
     map_height: f32,
+
+    event_queue: VecDeque<GameEvent>
 }
 
 impl Game {
     pub fn load() -> Self {
         let map: serde_json::Value =
-            // serde_json::from_reader(std::fs::File::open("map.json").unwrap()).unwrap();
-            serde_json::from_slice(include_bytes!("../map.json")).unwrap();
+            serde_json::from_reader(std::fs::File::open("map.json").unwrap()).unwrap();
+            // serde_json::from_slice(include_bytes!("../map.json")).unwrap();
 
         let generator = Generator::new(1.0, 0.1, true);
 
@@ -71,12 +81,16 @@ impl Game {
             )));
         }
 
-        let electrical_boxes = vec![ElectricalBox::new(Rect::new(
-            -1.0,
-            3.0,
-            10.0 / PIXELS_PER_UNIT,
-            16.0 / PIXELS_PER_UNIT,
-        ))];
+        let mut electrical_boxes = vec![];
+        for ebox in map["electrical_boxes"].as_array().unwrap() {
+            electrical_boxes.push(ElectricalBox::new(Rect::new(
+                ebox["x"].as_f64().unwrap() as f32,
+                ebox["y"].as_f64().unwrap() as f32,
+                10.0 / PIXELS_PER_UNIT,
+                16.0 / PIXELS_PER_UNIT,
+            )));
+        }
+        let break_timer = RandomTimer::new(5.0, 10.0);
 
         let puddles = vec![];
         let puddle_timer = RandomTimer::new(0.1, 1.0);
@@ -87,6 +101,8 @@ impl Game {
         let map_width = 1600.0 / PIXELS_PER_UNIT;
         let map_height = 800.0 / PIXELS_PER_UNIT;
 
+        let event_queue = VecDeque::new();
+
         Self {
             generator,
             player,
@@ -94,22 +110,38 @@ impl Game {
             max_number_of_repair_kits,
             number_of_repair_kits,
             electrical_boxes,
+            break_timer,
             puddles,
             puddle_timer,
             map_width,
             map_height,
+            event_queue
         }
     }
 
     pub fn update(&mut self, delta: f32) {
         self.puddle_timer.update(delta);
 
+        if self.get_working_boxes() < self.electrical_boxes.len() / 2 {
+            *self.generator.running_mut() = true;
+        }
+        else {
+            *self.generator.running_mut() = false;
+        }
+
         self.generator.update(delta);
+
         self.update_puddles(delta);
         self.player.update_pos(self.which_drag(), delta);
         self.map_collisions();
         self.player_collisions();
 
+        self.break_timer.update(delta);
+        if self.break_timer.is_active() {
+            self.break_random_ebox();
+
+            self.break_timer.reset();
+        }
     }
 
     fn update_puddles(&mut self, delta: f32) {
@@ -261,6 +293,35 @@ impl Game {
         }
         // defualt drag
         0.75
+    }
+
+    fn add_event(&mut self, event: GameEvent) {
+        self.event_queue.push_back(event);
+    }
+
+    pub fn poll_event(&mut self) -> Option<GameEvent> {
+        self.event_queue.pop_front()
+    }
+
+    fn break_random_ebox(&mut self) {
+        let mut active_boxes: Vec<&mut ElectricalBox> = Vec::with_capacity(self.electrical_boxes.len());
+
+        for ebox in &mut self.electrical_boxes{
+            if !ebox.broken() {
+                active_boxes.push(ebox);
+            }
+        }
+
+        if active_boxes.len() == 0 {
+            return;
+        }
+
+        let index = gen_range(0, active_boxes.len()-1);
+
+        *active_boxes[index].broken_mut() = true;
+
+        let ebox = active_boxes[index].clone();
+        self.add_event(GameEvent::DestroyEBox(ebox));
     }
 }
 

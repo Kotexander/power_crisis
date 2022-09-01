@@ -142,7 +142,7 @@ struct App {
     lightning_timer: RandomTimer,
 }
 impl App {
-    async fn new() -> Self {
+    async fn new() -> App {
         let game = Game::load();
 
         let scale = 0.1;
@@ -241,6 +241,9 @@ impl App {
             );
         }
 
+
+        self.game_events();
+
         self.lightning_timer.update(delta);
         self.player_key_input();
         self.update_animations(delta);
@@ -258,6 +261,21 @@ impl App {
 
         if self.lightning_timer.is_active() {
             self.lightning_timer.reset();
+        }
+    }
+
+    fn game_events(&mut self) {
+        while let Some(event) = self.game.poll_event() {
+            match event {
+                GameEvent::FixEBox(ebox) => {
+                    // TODO: play fix sound
+                },
+                GameEvent::DestroyEBox(ebox) => {
+                    let x = ebox.hit_box().x + ebox.hit_box().w/2.0;
+                    let y = ebox.hit_box().y + ebox.hit_box().h/2.0;
+                    self.lightnings.push(App::new_lightning(&self.assets.lightning_sound, vec2(x, y), 1.0));
+                }
+            }
         }
     }
 
@@ -429,7 +447,7 @@ impl App {
 
     fn draw_generator_ui(&self) {
         draw_rectangle(10., 10., 145., 20., DARKGRAY);
-        draw_rectangle(30., 15., 120. * self.game.generator().feul(), 10., YELLOW);
+        draw_rectangle(30., 15., 120. * self.game.generator().feul().max(0.0), 10., YELLOW);
         draw_texture(self.assets.generator, 12.5, 12.5, WHITE);
     }
 

@@ -2,6 +2,7 @@ use macroquad::math::Rect;
 
 use super::HitBox;
 
+#[derive(Copy, Clone)]
 pub struct ElectricalBox {
     hit_box: Rect,
     broken: bool,
@@ -15,6 +16,11 @@ impl ElectricalBox {
     /// Get a reference to the elecrical box's broken.
     pub fn broken(&self) -> &bool {
         &self.broken
+    }
+
+    /// Get a mutable reference to the elecrical box's broken.
+    pub fn broken_mut(&mut self) -> &mut bool {
+        &mut self.broken
     }
 }
 
