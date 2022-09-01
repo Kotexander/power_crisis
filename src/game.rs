@@ -19,13 +19,14 @@ mod random_timer;
 pub use random_timer::*;
 
 pub enum GameEvent {
+    Restock,
     FixEBox(ElectricalBox),
     DestroyEBox(ElectricalBox)
 }
 
 use macroquad::{
     math::{vec2, Rect, Vec2},
-    rand::{gen_range, RandomRange},
+    rand::gen_range,
 };
 
 use crate::PIXELS_PER_UNIT;
@@ -49,6 +50,8 @@ pub struct Game {
     puddles: Vec<Puddle>,
     puddle_timer: RandomTimer,
 
+    restock: Rect,
+
     map_width: f32,
     map_height: f32,
 
@@ -71,7 +74,22 @@ impl Game {
             6.0 / PIXELS_PER_UNIT,
         ));
 
-        let mut walls = vec![];
+        let van = &map["van"];
+        let restock = Rect::new(
+            van["x"].as_f64().unwrap() as f32 - 1.0,
+            van["y"].as_f64().unwrap() as f32 - 1.0,
+            van["w"].as_f64().unwrap() as f32 + 2.0,
+            van["h"].as_f64().unwrap() as f32 + 2.0,
+        );
+
+        let mut walls = vec![
+            Wall::new(Rect::new(
+                van["x"].as_f64().unwrap() as f32,
+                van["y"].as_f64().unwrap() as f32,
+                van["w"].as_f64().unwrap() as f32,
+                van["h"].as_f64().unwrap() as f32,
+            ))
+        ];
         for wall in map["walls"].as_array().unwrap() {
             walls.push(Wall::new(Rect::new(
                 wall["x"].as_f64().unwrap() as f32,
@@ -107,6 +125,7 @@ impl Game {
             generator,
             player,
             walls,
+            restock,
             max_number_of_repair_kits,
             number_of_repair_kits,
             electrical_boxes,
@@ -131,6 +150,7 @@ impl Game {
 
         self.generator.update(delta);
 
+        self.try_restock();
         self.update_puddles(delta);
         self.player.update_pos(self.which_drag(), delta);
         self.map_collisions();
@@ -141,6 +161,13 @@ impl Game {
             self.break_random_ebox();
 
             self.break_timer.reset();
+        }
+    }
+
+    fn try_restock(&mut self) {
+        if self.player.hit_box().overlaps(&self.restock) && self.number_of_repair_kits < self.max_number_of_repair_kits {
+            self.add_event(GameEvent::Restock);
+            self.number_of_repair_kits = self.max_number_of_repair_kits;
         }
     }
 

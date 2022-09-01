@@ -267,6 +267,9 @@ impl App {
     fn game_events(&mut self) {
         while let Some(event) = self.game.poll_event() {
             match event {
+                GameEvent::Restock => {
+                    // TODO: play restock sound
+                }
                 GameEvent::FixEBox(ebox) => {
                     // TODO: play fix sound
                 },

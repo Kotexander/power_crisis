@@ -79,14 +79,4 @@ impl Lightning {
     pub fn current_duration(&self) -> &f32 {
         &self.current_duration
     }
-
-    /// Gives a reference to the ligtning's  time until change.
-    pub fn time_until_change(&self) -> f32 {
-        self.time_until_change
-    }
-
-    /// Gives a reference to the ligtning's time between change.
-    pub fn time_between_change(&self) -> f32 {
-        self.time_between_change
-    }
 }

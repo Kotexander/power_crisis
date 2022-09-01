@@ -17,16 +17,6 @@ impl Player {
         &mut self.hit_box
     }
 
-    /// Get a reference to the player's velocity.
-    pub fn vel(&self) -> &Vec2 {
-        &self.vel
-    }
-
-    /// Set the player's velocity.
-    pub fn set_vel(&mut self, vel: Vec2) {
-        self.vel = vel;
-    }
-
     /// Adds velocity to the position with drag.
     pub fn update_pos(&mut self, drag: f32, delta: f32) {
         self.vel *= drag;
