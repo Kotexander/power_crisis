@@ -552,7 +552,7 @@ async fn main() {
         match &app.game_state {
             GameState::Start => {
                 set_default_camera();
-                draw_text("A severe thunderstorm is theaterning a city!", text_x, text_y - 60.0, 20.0, WHITE);
+                draw_text("A severe thunderstorm is threatening a city!", text_x, text_y - 60.0, 20.0, WHITE);
                 draw_text("You are an electrition tasked with keeping the city running!", text_x, text_y - 30.0, 20.0, WHITE);
                 draw_text("Use <WASD> to move around", text_x, text_y, 20.0, WHITE);
                 draw_text("Get close to the electrical boxes to fix them,", text_x, text_y + 30.0, 20.0, WHITE);
