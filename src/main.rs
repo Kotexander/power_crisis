@@ -57,6 +57,9 @@ struct Assets {
     map: Texture2D,
     lightning_sound: Sound,
     walk_sound: Sound,
+    repair_sound: Sound,
+    restock_sound: Sound,
+
 }
 impl Assets {
     async fn load() -> Self {
@@ -91,6 +94,8 @@ impl Assets {
 
         let lightning_sound = load_sound("assets/lightning.wav").await.unwrap();
         let walk_sound = load_sound("assets/walk.wav").await.unwrap();
+        let repair_sound = load_sound("assets/repair.wav").await.unwrap();
+        let restock_sound = load_sound("assets/restock.wav").await.unwrap();
 
         Self {
             player_animation,
@@ -103,6 +108,8 @@ impl Assets {
 
             lightning_sound,
             walk_sound,
+            repair_sound,
+            restock_sound,
         }
     }
 }
@@ -283,10 +290,16 @@ impl App {
         while let Some(event) = self.game.poll_event() {
             match event {
                 GameEvent::Restock => {
-                    // TODO: play restock sound
+                    let sound_params = PlaySoundParams{
+                        ..PlaySoundParams::default()
+                    };
+                    play_sound(self.assets.restock_sound, sound_params);                
                 }
                 GameEvent::FixEBox(_ebox) => {
-                    // TODO: play fix sound
+                    let sound_params = PlaySoundParams{
+                        ..PlaySoundParams::default()
+                    };
+                    play_sound(self.assets.repair_sound, sound_params);
                     self.score += 200.0;
                 }
                 GameEvent::DestroyEBox(ebox) => {
