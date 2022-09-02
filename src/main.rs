@@ -215,9 +215,9 @@ impl App {
             if a > 0.5 {
                 a = 0.5
             }
-            Color::new(0.0, 0.0, 0.1, a)
+            Color::new(0.0, 0.0, 0.2, a)
         } else {
-            Color::new(0.0, 0.0, 0.1, 0.5)
+            Color::new(0.0, 0.0, 0.2, 0.5)
         };
         draw_rectangle(0.0, 0.0, screen_width(), screen_width(), colour);
         set_camera(&self.camera);

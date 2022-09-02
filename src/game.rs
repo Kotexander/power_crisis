@@ -57,7 +57,6 @@ pub struct Game {
 
     event_queue: VecDeque<GameEvent>,
 }
-
 impl Game {
     pub fn load() -> Self {
         let map: serde_json::Value =
@@ -263,6 +262,11 @@ impl Game {
                 hit_box.move_to(v);
             }
         }
+        for ebox in &self.electrical_boxes {
+            if let Some(v) = aabb_collision(&hit_box, ebox.hit_box()) {
+                hit_box.move_to(v);
+            }
+        }
 
         self.puddles.push(Puddle::new(
             hit_box,
@@ -294,11 +298,6 @@ impl Game {
     /// Get a reference to the game's number of repair kits.
     pub fn number_of_repair_kits(&self) -> &u32 {
         &self.number_of_repair_kits
-    }
-
-    /// Get a mutable reference to the game's number of repair kits.
-    pub fn number_of_repair_kits_mut(&mut self) -> &mut u32 {
-        &mut self.number_of_repair_kits
     }
 
     /// Get a reference to  the game's max number of repair kits.
