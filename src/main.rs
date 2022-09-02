@@ -12,6 +12,12 @@ use lightning::*;
 
 pub const PIXELS_PER_UNIT: f32 = 16.0;
 
+enum GameState {
+    Start,
+    Running,
+    End,
+}
+
 struct FootstepManager {
     distance_traveled: f32,
     distance_until_sound: f32,
@@ -140,6 +146,11 @@ struct App {
     player_fm: FootstepManager,
     lightnings: Vec<Lightning>,
     lightning_timer: RandomTimer,
+
+    time_survived: f32,
+    score: f32,
+
+    game_state: GameState,
 }
 impl App {
     async fn new() -> App {
@@ -164,6 +175,11 @@ impl App {
 
         let player_fm = FootstepManager::new(2.0);
 
+        let time_survived = 0.0;
+
+        let score = 0.0;
+
+        let game_state = GameState::Start;
         Self {
             game,
             camera,
@@ -173,6 +189,11 @@ impl App {
             player_fm,
             lightnings,
             lightning_timer,
+
+            time_survived,
+            score,
+
+            game_state,
         }
     }
 
@@ -207,6 +228,7 @@ impl App {
 
         self.draw_generator_ui();
         self.draw_repair_kit_ui();
+        self.draw_score();
 
         let colour = if !self.lightnings.is_empty() {
             let index = self.lightnings.len() - 1;
@@ -219,12 +241,16 @@ impl App {
         } else {
             Color::new(0.0, 0.0, 0.2, 0.5)
         };
-        draw_rectangle(0.0, 0.0, screen_width(), screen_width(), colour);
+        draw_rectangle(0.0, 0.0, screen_width(), screen_height(), colour);
         set_camera(&self.camera);
     }
 
     fn update(&mut self, delta: f32) {
         self.game_events();
+
+        let scale = 0.1;
+        let aspect = screen_width()/screen_height();
+        self.camera.zoom = vec2(1.0 *scale, aspect*scale);
 
         self.lightning_timer.update(delta);
         self.player_key_input();
@@ -244,6 +270,13 @@ impl App {
         if self.lightning_timer.is_active() {
             self.lightning_timer.reset();
         }
+
+        if self.game.generator().feul() <= 0.0 {
+            self.game_state = GameState::End;
+            return;
+        }
+
+        self.update_score(delta);
     }
 
     fn game_events(&mut self) {
@@ -254,6 +287,7 @@ impl App {
                 }
                 GameEvent::FixEBox(_ebox) => {
                     // TODO: play fix sound
+                    self.score += 200.0;
                 }
                 GameEvent::DestroyEBox(ebox) => {
                     let x = ebox.hit_box().x + ebox.hit_box().w / 2.0;
@@ -444,6 +478,11 @@ impl App {
         draw_texture(self.assets.repair_kit, 15.0, 45.0, WHITE)
     }
 
+    fn draw_score(&self) {
+        draw_text(&format!("Score: {}", self.score + self.get_timer_score()), 10.0, 80.0, 25.0, WHITE);
+        draw_text(&format!("Time: {:.2}", self.time_survived), 10.0, 110.0, 25.0, WHITE);
+    }
+
     fn new_lightning(sound: &Sound, origin: Vec2, max_duration: f32) -> Lightning {
         let sound_params = PlaySoundParams {
             ..PlaySoundParams::default()
@@ -478,15 +517,63 @@ impl App {
             self.camera.offset.y = -height * self.camera.zoom.y + 1.0;
         }
     }
+
+    fn update_score(&mut self, delta: f32) {
+        self.time_survived += delta;
+    }
+
+    fn get_timer_score(&self) -> f32 {
+        let score = self.time_survived.floor();
+        
+        score*10.0
+    } 
 }
 
 #[macroquad::main("Power Crisis")]
 async fn main() {
     let mut app = App::new().await;
-
+    
     loop {
-        app.draw();
-        app.update(get_frame_time());
+        let text_x = screen_width()/4.0;
+        let text_y = screen_height()/2.0;
+        match &app.game_state {
+            GameState::Start => {
+                set_default_camera();
+                draw_text("A severe thunderstorm is theaterning a city!", text_x, text_y - 60.0, 20.0, WHITE);
+                draw_text("You are an electrition tasked with keeping the city running!", text_x, text_y - 30.0, 20.0, WHITE);
+                draw_text("Use <WASD> to move around", text_x, text_y, 20.0, WHITE);
+                draw_text("Get close to the electrical boxes to fix them,", text_x, text_y + 30.0, 20.0, WHITE);
+                draw_text("Get close to your van to retock your repair kits,", text_x, text_y + 60.0, 20.0, WHITE);
+                draw_text("Don't let the backup generator run out of feul!", text_x, text_y + 90.0, 20.0, WHITE);
+                draw_text("Press <ENTER> to Start", text_x, text_y + 120.0, 20.0, WHITE);
+                if is_key_pressed(KeyCode::Enter) {
+                    app.game_state = GameState::Running;
+                    app.score = 0.0;
+                    app.time_survived = 0.0;
+                    get_frame_time();
+                }
+            }
+            GameState::Running => {
+                app.update(get_frame_time());
+                app.draw();
+            }
+            GameState::End => {
+                set_default_camera();
+                clear_background(BLACK);
+                draw_text(&format!("You survived for {:.2} Seconds!", app.time_survived), text_x, text_y-30.0, 20.0, WHITE);
+                draw_text(&format!("Your final score is {}!", app.score+app.get_timer_score()), text_x, text_y, 20.0, WHITE);
+                draw_text("Press <ENTER> to restart", text_x, text_y + 30.0, 20.0, WHITE);
+
+                if is_key_pressed(KeyCode::Enter) {
+                    app.game = Game::load();
+                    app.game_state = GameState::Running;
+                    app.score = 0.0;
+                    app.time_survived = 0.0;
+                    get_frame_time();
+                }
+                
+            }
+        }
 
         next_frame().await
     }
