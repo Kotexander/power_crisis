@@ -108,7 +108,7 @@ impl Game {
                 16.0 / PIXELS_PER_UNIT,
             )));
         }
-        let break_timer = RandomTimer::new(5.0, 10.0);
+        let break_timer = RandomTimer::new(1.0, 5.0);
 
         let puddles = vec![];
         let puddle_timer = RandomTimer::new(0.1, 1.0);
@@ -141,6 +141,7 @@ impl Game {
     pub fn update(&mut self, delta: f32) {
         self.puddle_timer.update(delta);
 
+        self.fix_eboxes();
         if self.get_working_boxes() < self.electrical_boxes.len() / 2 {
             *self.generator.running_mut() = true;
         }
@@ -161,6 +162,20 @@ impl Game {
             self.break_random_ebox();
 
             self.break_timer.reset();
+        }
+    }
+
+    fn fix_eboxes(&mut self) {
+        if self.number_of_repair_kits > 0 {
+            for i in 0..self.electrical_boxes.len() {
+                let ebox = &mut self.electrical_boxes[i];
+                if ebox.fix_hit_box().overlaps(self.player.hit_box()) && *ebox.broken() {
+                    *ebox.broken_mut() = false;
+                    self.number_of_repair_kits -= 1;
+                    let ebox = ebox.clone();
+                    self.add_event(GameEvent::FixEBox(ebox));
+                }
+            }
         }
     }
 
