@@ -33,8 +33,7 @@ impl Lightning {
         let mut bottom_point = origin;
         let mut top_point = origin;
 
-        let mut points = Vec::new();
-        points.push(origin);
+        let mut points = vec![origin];
         while top_point.y < origin.y + 50.0 {
             let off_y = gen_range(0.2, 1.0);
             let off_x = gen_range(-0.5, 0.5);

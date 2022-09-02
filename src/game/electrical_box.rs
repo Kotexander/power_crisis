@@ -17,7 +17,11 @@ impl ElectricalBox {
             hit_box.h + 2.0,
         );
         let broken = false;
-        Self { hit_box, fix_hit_box, broken }
+        Self {
+            hit_box,
+            fix_hit_box,
+            broken,
+        }
     }
 
     /// Get a reference to the elecrical box's broken.

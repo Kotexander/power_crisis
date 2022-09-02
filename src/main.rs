@@ -187,10 +187,6 @@ impl App {
         self.draw_lightnings();
 
         self.draw_ui();
-        // TODO: remove in final release
-        if is_key_down(KeyCode::Tab) {
-            self.draw_hit_boxes();
-        }
     }
 
     fn draw_map(&self) {
@@ -212,7 +208,7 @@ impl App {
         self.draw_generator_ui();
         self.draw_repair_kit_ui();
 
-        let colour = if self.lightnings.len() >= 1 {
+        let colour = if !self.lightnings.is_empty() {
             let index = self.lightnings.len() - 1;
             let mut a =
                 self.lightnings[index].max_duration() * self.lightnings[index].current_duration();
@@ -228,20 +224,6 @@ impl App {
     }
 
     fn update(&mut self, delta: f32) {
-        // TODO: remove in final release
-        if is_key_pressed(KeyCode::Z) {
-            self.game = Game::load();
-        }
-        // TODO: remove in final release
-        if is_key_pressed(KeyCode::X) {
-            println!(
-                "x: {}, y: {}",
-                self.game.player().hit_box().x,
-                self.game.player().hit_box().y
-            );
-        }
-
-
         self.game_events();
 
         self.lightning_timer.update(delta);
@@ -270,13 +252,17 @@ impl App {
                 GameEvent::Restock => {
                     // TODO: play restock sound
                 }
-                GameEvent::FixEBox(ebox) => {
+                GameEvent::FixEBox(_ebox) => {
                     // TODO: play fix sound
-                },
+                }
                 GameEvent::DestroyEBox(ebox) => {
-                    let x = ebox.hit_box().x + ebox.hit_box().w/2.0;
-                    let y = ebox.hit_box().y + ebox.hit_box().h/2.0;
-                    self.lightnings.push(App::new_lightning(&self.assets.lightning_sound, vec2(x, y), 1.0));
+                    let x = ebox.hit_box().x + ebox.hit_box().w / 2.0;
+                    let y = ebox.hit_box().y + ebox.hit_box().h / 2.0;
+                    self.lightnings.push(App::new_lightning(
+                        &self.assets.lightning_sound,
+                        vec2(x, y),
+                        1.0,
+                    ));
                 }
             }
         }
@@ -312,19 +298,6 @@ impl App {
     fn player_key_input(&mut self) {
         let mut vel = vec2(0.0, 0.0);
         let mut speed = 2.0;
-
-        if is_key_pressed(KeyCode::Space) {
-            if *self.game.number_of_repair_kits() > 0 {
-                *self.game.number_of_repair_kits_mut() -= 1;
-            }
-
-            let pos = vec2(
-                self.game.player().hit_box().x,
-                self.game.player().hit_box().y,
-            );
-            self.lightnings
-                .push(App::new_lightning(&self.assets.lightning_sound, pos, 1.0));
-        }
 
         if is_key_down(KeyCode::LeftShift) {
             speed *= 1.5
@@ -422,7 +395,7 @@ impl App {
 
     fn draw_lightnings(&self) {
         for lightning in self.lightnings.iter() {
-            self.draw_lightning(&lightning)
+            self.draw_lightning(lightning)
         }
     }
 
@@ -450,7 +423,13 @@ impl App {
 
     fn draw_generator_ui(&self) {
         draw_rectangle(10., 10., 145., 20., DARKGRAY);
-        draw_rectangle(30., 15., 120. * self.game.generator().feul().max(0.0), 10., YELLOW);
+        draw_rectangle(
+            30.,
+            15.,
+            120. * self.game.generator().feul().max(0.0),
+            10.,
+            YELLOW,
+        );
         draw_texture(self.assets.generator, 12.5, 12.5, WHITE);
     }
 
@@ -465,40 +444,6 @@ impl App {
         draw_texture(self.assets.repair_kit, 15.0, 45.0, WHITE)
     }
 
-    fn draw_hit_box<T: HitBox>(&self, object: &T) {
-        let hit_box = object.hit_box();
-        draw_rectangle_lines(hit_box.x, hit_box.y, hit_box.w, hit_box.h, 0.1, WHITE);
-    }
-
-    fn draw_hit_box_electrical_boxes(&self) {
-        for electrical_box in self.game.electrical_boxes() {
-            self.draw_hit_box(electrical_box);
-        }
-    }
-
-    fn draw_hit_box_walls(&self) {
-        for wall in self.game.walls() {
-            self.draw_hit_box(wall);
-        }
-    }
-
-    fn draw_hit_box_puddles(&self) {
-        for puddle in self.game.puddles() {
-            self.draw_hit_box(puddle);
-        }
-    }
-
-    fn draw_hit_box_player(&self) {
-        self.draw_hit_box(self.game.player());
-    }
-
-    fn draw_hit_boxes(&self) {
-        self.draw_hit_box_walls();
-        self.draw_hit_box_electrical_boxes();
-        self.draw_hit_box_puddles();
-        self.draw_hit_box_player();
-    }
-
     fn new_lightning(sound: &Sound, origin: Vec2, max_duration: f32) -> Lightning {
         let sound_params = PlaySoundParams {
             ..PlaySoundParams::default()
@@ -506,8 +451,7 @@ impl App {
 
         play_sound(*sound, sound_params);
 
-        let lightning = Lightning::new(origin, max_duration);
-        lightning
+        Lightning::new(origin, max_duration)
     }
 
     fn lock_camera(&mut self) {
@@ -541,11 +485,6 @@ async fn main() {
     let mut app = App::new().await;
 
     loop {
-        // TODO: remove in final release
-        if is_key_pressed(KeyCode::Escape) {
-            break;
-        }
-
         app.draw();
         app.update(get_frame_time());
 

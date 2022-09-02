@@ -21,7 +21,7 @@ pub use random_timer::*;
 pub enum GameEvent {
     Restock,
     FixEBox(ElectricalBox),
-    DestroyEBox(ElectricalBox)
+    DestroyEBox(ElectricalBox),
 }
 
 use macroquad::{
@@ -55,14 +55,14 @@ pub struct Game {
     map_width: f32,
     map_height: f32,
 
-    event_queue: VecDeque<GameEvent>
+    event_queue: VecDeque<GameEvent>,
 }
 
 impl Game {
     pub fn load() -> Self {
         let map: serde_json::Value =
-            serde_json::from_reader(std::fs::File::open("map.json").unwrap()).unwrap();
-            // serde_json::from_slice(include_bytes!("../map.json")).unwrap();
+            // serde_json::from_reader(std::fs::File::open("map.json").unwrap()).unwrap();
+            serde_json::from_slice(include_bytes!("../map.json")).unwrap();
 
         let generator = Generator::new(1.0, 0.1, true);
 
@@ -82,14 +82,12 @@ impl Game {
             van["h"].as_f64().unwrap() as f32 + 2.0,
         );
 
-        let mut walls = vec![
-            Wall::new(Rect::new(
-                van["x"].as_f64().unwrap() as f32,
-                van["y"].as_f64().unwrap() as f32,
-                van["w"].as_f64().unwrap() as f32,
-                van["h"].as_f64().unwrap() as f32,
-            ))
-        ];
+        let mut walls = vec![Wall::new(Rect::new(
+            van["x"].as_f64().unwrap() as f32,
+            van["y"].as_f64().unwrap() as f32,
+            van["w"].as_f64().unwrap() as f32,
+            van["h"].as_f64().unwrap() as f32,
+        ))];
         for wall in map["walls"].as_array().unwrap() {
             walls.push(Wall::new(Rect::new(
                 wall["x"].as_f64().unwrap() as f32,
@@ -108,7 +106,7 @@ impl Game {
                 16.0 / PIXELS_PER_UNIT,
             )));
         }
-        let break_timer = RandomTimer::new(1.0, 5.0);
+        let break_timer = RandomTimer::new(3.0, 5.0);
 
         let puddles = vec![];
         let puddle_timer = RandomTimer::new(0.1, 1.0);
@@ -134,7 +132,7 @@ impl Game {
             puddle_timer,
             map_width,
             map_height,
-            event_queue
+            event_queue,
         }
     }
 
@@ -144,8 +142,7 @@ impl Game {
         self.fix_eboxes();
         if self.get_working_boxes() < self.electrical_boxes.len() / 2 {
             *self.generator.running_mut() = true;
-        }
-        else {
+        } else {
             *self.generator.running_mut() = false;
         }
 
@@ -172,7 +169,7 @@ impl Game {
                 if ebox.fix_hit_box().overlaps(self.player.hit_box()) && *ebox.broken() {
                     *ebox.broken_mut() = false;
                     self.number_of_repair_kits -= 1;
-                    let ebox = ebox.clone();
+                    let ebox = *ebox;
                     self.add_event(GameEvent::FixEBox(ebox));
                 }
             }
@@ -180,7 +177,9 @@ impl Game {
     }
 
     fn try_restock(&mut self) {
-        if self.player.hit_box().overlaps(&self.restock) && self.number_of_repair_kits < self.max_number_of_repair_kits {
+        if self.player.hit_box().overlaps(&self.restock)
+            && self.number_of_repair_kits < self.max_number_of_repair_kits
+        {
             self.add_event(GameEvent::Restock);
             self.number_of_repair_kits = self.max_number_of_repair_kits;
         }
@@ -199,19 +198,17 @@ impl Game {
         while i < self.puddles.len() {
             if self.puddles[i].time_left() <= 0.0 {
                 self.puddles.remove(i);
-            }
-            else {
+            } else {
                 i += 1;
             }
         }
 
         // self.puddles.drain_filter(|p| {
-            // if p.time_left() >= 0.0 {
-                // return true;
-            // }
-            // false
+        // if p.time_left() >= 0.0 {
+        // return true;
+        // }
+        // false
         // });
-        
     }
 
     fn player_collisions(&mut self) {
@@ -262,12 +259,16 @@ impl Game {
         );
 
         for wall in &self.walls {
-            if let Some(v) = aabb_collision(&hit_box, &wall.hit_box()) {
+            if let Some(v) = aabb_collision(&hit_box, wall.hit_box()) {
                 hit_box.move_to(v);
             }
         }
-        
-        self.puddles.push(Puddle::new(hit_box, 60.0, gen_range(0.0, std::f32::consts::TAU)));
+
+        self.puddles.push(Puddle::new(
+            hit_box,
+            60.0,
+            gen_range(0.0, std::f32::consts::TAU),
+        ));
     }
 
     /// Get a reference to the game's generator.
@@ -346,28 +347,30 @@ impl Game {
     }
 
     fn break_random_ebox(&mut self) {
-        let mut active_boxes: Vec<&mut ElectricalBox> = Vec::with_capacity(self.electrical_boxes.len());
+        let mut active_boxes: Vec<&mut ElectricalBox> =
+            Vec::with_capacity(self.electrical_boxes.len());
 
-        for ebox in &mut self.electrical_boxes{
+        for ebox in &mut self.electrical_boxes {
             if !ebox.broken() {
                 active_boxes.push(ebox);
             }
         }
 
-        if active_boxes.len() == 0 {
+        if active_boxes.is_empty() {
             return;
         }
 
-        let index = gen_range(0, active_boxes.len()-1);
+        let index = gen_range(0, active_boxes.len() - 1);
 
         *active_boxes[index].broken_mut() = true;
 
-        let ebox = active_boxes[index].clone();
+        let ebox = *active_boxes[index];
         self.add_event(GameEvent::DestroyEBox(ebox));
     }
 }
 
 fn aabb_collision(first: &Rect, other: &Rect) -> Option<Vec2> {
+    #![allow(clippy::needless_return)]
     if !overlaps(first, other) {
         return None;
     }

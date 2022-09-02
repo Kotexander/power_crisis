@@ -5,11 +5,15 @@ use super::HitBox;
 pub struct Puddle {
     hit_box: Rect,
     time_left: f32,
-    pub rotation: f32
+    pub rotation: f32,
 }
 impl Puddle {
     pub fn new(hit_box: Rect, time_left: f32, rotation: f32) -> Self {
-        Self { hit_box, time_left, rotation }
+        Self {
+            hit_box,
+            time_left,
+            rotation,
+        }
     }
     pub fn update(&mut self, delta: f32) {
         self.time_left -= delta;
