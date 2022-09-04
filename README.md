@@ -3,13 +3,13 @@
 
 A severe thunderstorm is threatening a city!
 
-You are an electrition tasked with keeping the city running.
+You are an electrician tasked with keeping the city running.
 
-Use < WASD > to move around and < SHIFT > ro run.
+Use < WASD > to move around and < SHIFT > to run.
 
 Get close to your van to restock your repair kits.
 
-Don't let the backup generator run out of feul!
+Don't let the backup generator run out of fuel!
 
 Good Luck!
 
